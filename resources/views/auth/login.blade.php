@@ -2,6 +2,11 @@
 
 @section('title', 'Login')
 
+@push('styles')
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/css/intlTelInput.css">
+@endpush
+
 @section('content')
 
     <h2>Welcome Back!</h2>
@@ -16,7 +21,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('login.store') }}">
+    <form method="POST" action="{{ route('login.store') }}" id="loginForm">
 
         @csrf
 
@@ -25,12 +30,18 @@
 
             <input
                 type="tel"
-                name="phone"
-                value="{{ old('phone') }}"
-                placeholder="+88017XXXXXXXX"
-                autocomplete="username"
+                id="phone"
+                placeholder="Enter phone number"
+                autocomplete="tel"
                 required
                 autofocus
+            >
+
+            <input
+                type="hidden"
+                name="phone"
+                id="full_phone"
+                value="{{ old('phone') }}"
             >
         </div>
 
@@ -59,7 +70,7 @@
             </div>
         </div>
 
-        <button type="submit" class="auth-button">
+        <button type="submit" class="auth-button" id="loginButton">
             Login
         </button>
 
@@ -73,13 +84,98 @@
 @endsection
 
 @push('scripts')
-<script>
-    function togglePassword(id) {
-        const input = document.getElementById(id);
 
-        input.type = input.type === 'password'
-            ? 'text'
-            : 'password';
-    }
-</script>
+    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/js/intlTelInput.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const phoneInput = document.querySelector("#phone");
+            const fullPhoneInput = document.querySelector("#full_phone");
+            const loginForm = document.querySelector("#loginForm");
+            const loginButton = document.querySelector("#loginButton");
+
+            const oldPhone = @json(old('phone'));
+
+            const iti = window.intlTelInput(phoneInput, {
+                initialCountry: "bd",
+                separateDialCode: true,
+                nationalMode: true,
+                allowDropdown: true,
+                showFlags: true,
+                countrySearch: true,
+
+                preferredCountries: [
+                    'bd',
+                    'in',
+                    'us',
+                    'gb',
+                    'sa',
+                    'ae'
+                ],
+
+                loadUtils: () => import(
+                    "https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/js/utils.js"
+                )
+            });
+
+            // Restore previous phone number.
+            if (oldPhone) {
+                iti.setNumber(oldPhone);
+            }
+
+            loginForm.addEventListener("submit", async function (event) {
+
+                event.preventDefault();
+
+                loginButton.disabled = true;
+                loginButton.textContent = "Please wait...";
+
+                try {
+
+                    // Wait until phone validation utilities are loaded.
+                    await iti.promise;
+
+                    if (!iti.isValidNumber()) {
+
+                        alert("Please enter a valid phone number for the selected country.");
+
+                        phoneInput.focus();
+
+                        loginButton.disabled = false;
+                        loginButton.textContent = "Login";
+
+                        return;
+                    }
+
+                    // Convert phone number into E.164 format.
+                    fullPhoneInput.value = iti.getNumber();
+
+                    // Submit the login form.
+                    loginForm.submit();
+
+                } catch (error) {
+
+                    console.error("Phone validation error:", error);
+
+                    alert("Unable to validate phone number. Please try again.");
+
+                    loginButton.disabled = false;
+                    loginButton.textContent = "Login";
+                }
+
+            });
+
+        });
+
+        function togglePassword(id) {
+
+            const input = document.getElementById(id);
+
+            input.type = input.type === 'password'
+                ? 'text'
+                : 'password';
+        }
+    </script>
+
 @endpush

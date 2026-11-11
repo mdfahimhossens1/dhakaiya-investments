@@ -10,8 +10,6 @@ use App\Http\Controllers\User\PaymentInformationController;
 use App\Http\Controllers\User\ChangePasswordController;
 use App\Http\Controllers\User\KycVerificationController;
 use App\Http\Controllers\User\WalletController;
-use App\Http\Controllers\User\BdtWalletController;
-use App\Http\Controllers\User\UsdWalletController;
 use App\Http\Controllers\User\DepositHistoryController;
 use App\Http\Controllers\User\WithdrawalHistoryController;
 use App\Http\Controllers\User\TransactionHistoryController;
@@ -34,9 +32,16 @@ use App\Http\Controllers\User\MonthlyReferralLeaderboardController;
 use App\Http\Controllers\User\TopPerformersController;
 use App\Http\Controllers\User\ReferralController;
 use App\Http\Controllers\User\MyPositionController;
+use App\Http\Controllers\User\SupportController;
 
 Route::get('/', function () {
-    return redirect()->route('login');
+
+    if (auth()->check()) {
+        return redirect()->route('dashboard');
+    }
+
+    return view('welcome');
+
 })->name('home');
 
 Route::middleware('auth')->group(function () {
@@ -112,6 +117,13 @@ Route::middleware('auth')->group(function () {
 
             Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])
                 ->name('notifications.destroy');
+
+            Route::get('/announcements', [NotificationController::class, 'announcements'])
+    ->name('announcements');
+
+    Route::get('/important-notices', [NotificationController::class, 'importantNotices'])
+    ->name('important-notices');
+
             Route::get('/personal-information', [PersonalInformationController::class, 'index'])
                 ->name('personal-information.index');
 
@@ -135,11 +147,6 @@ Route::middleware('auth')->group(function () {
             Route::get('/wallet', [WalletController::class, 'index'])
             ->name('wallet.index');
 
-                Route::get('/wallet/bdt', [BdtWalletController::class, 'index'])
-        ->name('wallet.bdt');
-
-        Route::get('/wallet/usd', [UsdWalletController::class, 'index'])
-        ->name('wallet.usd');
     Route::get('/withdraw', [WalletController::class, 'withdraw'])
         ->name('withdraw');
 
@@ -235,6 +242,16 @@ Route::prefix('my-position')
 
     });
     
+Route::prefix('support')->name('support.')->controller(SupportController::class)->group(function () {
+
+    Route::get('/submit-ticket', 'submitTicket')->name('submit-ticket');
+
+    Route::get('/my-tickets', 'myTickets')->name('my-tickets');
+
+    Route::get('/contact', 'contact')->name('contact');
+
+});
+
         });
 
 });

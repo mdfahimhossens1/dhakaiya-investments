@@ -4,10 +4,10 @@
 
     {{-- Brand --}}
     <div class="sidebar-brand">
-        <div class="brand-icon">D</div>
-        <div class="brand-info">
-            <h3>Dhakaiya</h3>
-            <span>INVESTMENT</span>
+        <div class="brand-logo">
+        <a href="{{ route('user.dashboard') }}" class="sidebar-logo">
+    <img src="{{ asset('images/dhakaiya-logo.png') }}" alt="Dhakaiya Investment Logo">
+    </a>
         </div>
     </div>
 
@@ -71,11 +71,6 @@
                 <span>Account Summary</span>
             </a>
 
-            <a href="{{ route('user.notifications.index') }}"
-                class="sidebar-link {{ request()->routeIs('user.notifications.*') ? 'active' : '' }}">
-                <span class="menu-icon">♧</span>
-                <span>Notifications</span>
-            </a>
         </div>
 
         <div class="menu-section">
@@ -104,8 +99,6 @@
                 </summary>
                 <div class="submenu">
                     <a href="{{ route('user.wallet.index') }}" class="{{ request()->routeIs('user.wallet.index') ? 'active' : '' }}">Wallet Overview</a>
-                    <a href="{{ route('user.wallet.bdt') }}" class="{{ request()->routeIs('user.wallet.bdt') ? 'active' : '' }}">BDT Wallet</a>
-                    <a href="{{ route('user.wallet.usd') }}" class="{{ request()->routeIs('user.wallet.usd') ? 'active' : '' }}">USD Wallet</a>
                     <a href="{{ route('user.deposit-history.index') }}" class="{{ request()->routeIs('user.deposit-history.*') ? 'active' : '' }}">Deposit History</a>
                     <a href="{{ route('user.withdrawal-history.index') }}" class="{{ request()->routeIs('user.withdrawal-history.*') ? 'active' : '' }}">Withdrawal History</a>
                     <a href="{{ route('user.transaction-history.index') }}" class="{{ request()->routeIs('user.transaction-history.*') ? 'active' : '' }}">Transaction History</a>
@@ -232,9 +225,9 @@
                     <span class="menu-arrow">›</span>
                 </summary>
                 <div class="submenu">
-                    <a href="#">System Notifications</a>
-                    <a href="#">Important Notices</a>
-                    <a href="#">Announcements</a>
+                    <a href="{{ route('user.notifications.index') }}" class="sidebar-link {{ request()->routeIs('user.notifications.*') ? 'active' : '' }}">System Notifications</a>
+                    <a href="{{ route('user.important-notices') }}" class="{{ request()->routeIs('user.important-notices') ? 'active' : '' }}">Important Notices</a>
+                    <a href="{{ route('user.announcements') }}" class="{{ request()->routeIs('user.announcements') ? 'active' : '' }}">Announcements</a>
                 </div>
             </details>
 
@@ -245,9 +238,9 @@
                     <span class="menu-arrow">›</span>
                 </summary>
                 <div class="submenu">
-                    <a href="#">Submit Ticket</a>
-                    <a href="#">My Tickets</a>
-                    <a href="#">Contact Support</a>
+                    <a href="{{ route('user.support.submit-ticket') }}" class="{{ request()->routeIs('user.support.submit-ticket') ? 'active' : '' }}">Submit Ticket</a>
+                    <a href="{{ route('user.support.my-tickets') }}" class="{{ request()->routeIs('user.support.my-tickets') ? 'active' : '' }}">My Tickets</a>
+                    <a href="{{ route('user.support.contact') }}" class="{{ request()->routeIs('user.support.contact') ? 'active' : '' }}">Contact Support</a>
                 </div>
             </details>
         </div>
@@ -374,7 +367,11 @@
     .sidebar-navigation {
         padding: 0 14px 20px;
     }
-
+.brand-logo a img {
+    width: 55px;
+    height: 55px;
+    margin: auto;
+}
     /* ===== Toggle button ===== */
     .sidebar-toggle {
         width: 40px;

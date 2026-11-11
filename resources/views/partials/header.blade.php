@@ -46,7 +46,7 @@
 
                 <div class="dropdown-divider"></div>
 
-                <a href="#" class="dropdown-item">
+                <a href="{{ route('user.personal-information.index') }}" class="dropdown-item">
                     <span>👤</span>
                     My Profile
                 </a>

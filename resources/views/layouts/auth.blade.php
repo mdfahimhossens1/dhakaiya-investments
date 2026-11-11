@@ -23,43 +23,23 @@
         .auth-container {
             min-height: 100vh;
             display: flex;
-        }
-
-        .auth-left {
-            flex: 1;
-            background: linear-gradient(135deg, #102d25, #087f5b);
-            color: white;
-            display: flex;
-            flex-direction: column;
             justify-content: center;
-            padding: 70px;
-        }
-
-        .auth-left h1 {
-            font-size: 38px;
-            margin-bottom: 20px;
-        }
-
-        .auth-left p {
-            font-size: 16px;
-            line-height: 1.8;
-            color: #d7f5e9;
-            max-width: 450px;
+            align-items: center;
+            padding: 25px 15px;
         }
 
         .auth-right {
-            width: 520px;
+            width: 100%;
+            max-width: 460px;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 35px;
         }
 
         .auth-card {
             width: 100%;
-            max-width: 400px;
             background: white;
-            padding: 35px;
+            padding: 38px;
             border-radius: 16px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, .06);
         }
@@ -67,6 +47,7 @@
         .auth-card h2 {
             font-size: 27px;
             margin-bottom: 8px;
+            color: #172033;
         }
 
         .subtitle {
@@ -86,7 +67,8 @@
             margin-bottom: 8px;
         }
 
-        input, select {
+        input,
+        select {
             width: 100%;
             padding: 13px;
             border: 1px solid #dce2ea;
@@ -96,7 +78,8 @@
             background: white;
         }
 
-        input:focus, select:focus {
+        input:focus,
+        select:focus {
             border-color: #087f5b;
             box-shadow: 0 0 0 3px rgba(8, 127, 91, .1);
         }
@@ -111,6 +94,7 @@
             font-weight: bold;
             font-size: 15px;
             cursor: pointer;
+            transition: .2s;
         }
 
         .auth-button:hover {
@@ -162,16 +146,37 @@
             background: none;
             color: #087f5b;
             cursor: pointer;
+            font-size: 13px;
         }
 
-        @media(max-width: 850px) {
-            .auth-left {
-                display: none;
+        /* International Phone Input */
+
+        .iti {
+            width: 100%;
+        }
+
+        .iti input {
+            width: 100%;
+            padding-top: 13px;
+            padding-bottom: 13px;
+        }
+
+        .iti__country-list {
+            max-width: 300px;
+            z-index: 1000;
+        }
+
+        @media(max-width: 480px) {
+            .auth-container {
+                padding: 15px;
             }
 
-            .auth-right {
-                width: 100%;
-                padding: 20px;
+            .auth-card {
+                padding: 25px 20px;
+            }
+
+            .auth-card h2 {
+                font-size: 24px;
             }
         }
     </style>
@@ -182,15 +187,6 @@
 <body>
 
     <div class="auth-container">
-
-        <div class="auth-left">
-            <h1>Dhakaiya Investment</h1>
-
-            <p>
-                Welcome to Dhakaiya Investment.
-                Access your account through our secure authentication system.
-            </p>
-        </div>
 
         <div class="auth-right">
 

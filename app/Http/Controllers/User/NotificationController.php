@@ -74,4 +74,49 @@ class NotificationController extends Controller
 
         return back()->with('success', 'Notification deleted successfully.');
     }
+
+    /**
+ * Display user announcements.
+ */
+public function announcements()
+{
+    $user = auth()->user();
+
+    $announcements = collect([]);
+
+    $summary = [
+        'total' => 0,
+        'active' => 0,
+        'archived' => 0,
+    ];
+
+    return view('user.notifications.announcements', compact(
+        'user',
+        'announcements',
+        'summary'
+    ));
+}
+
+/**
+ * Display important notices.
+ */
+public function importantNotices()
+{
+    $user = auth()->user();
+
+    $notices = collect([]);
+
+    $summary = [
+        'total' => 0,
+        'important' => 0,
+        'archived' => 0,
+    ];
+
+    return view('user.notifications.important-notices', compact(
+        'user',
+        'notices',
+        'summary'
+    ));
+}
+
 }
