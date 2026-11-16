@@ -40,7 +40,7 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
 .btn-ghost{color:#fff;border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.04)}
 .btn-ghost:hover{border-color:var(--gold);color:var(--gold-2)}
 
-/* ==== NEW: APP DOWNLOAD ICON ==== */
+/* ==== APP DOWNLOAD ICON ==== */
 .app-dl-btn{
   width:42px;height:42px;border-radius:50%;
   display:inline-flex;align-items:center;justify-content:center;
@@ -48,7 +48,7 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
   border:1px solid rgba(214,173,98,.35);
   color:var(--gold-2);cursor:pointer;
   transition:transform .25s,background .25s,border-color .25s,color .25s;
-  position:relative;
+  position:relative;padding:0;
 }
 .app-dl-btn:hover{
   background:linear-gradient(135deg,var(--gold-2),var(--gold));
@@ -57,13 +57,14 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
 .app-dl-btn svg{width:20px;height:20px;display:block}
 .app-dl-btn::after{
   content:attr(data-tooltip);
-  position:absolute;top:calc(100% + 10px);left:50%;transform:translateX(-50%);
+  position:absolute;top:calc(100% + 10px);left:50%;transform:translateX(-50%) translateY(-4px);
   background:var(--ink);color:#fff;font-size:11px;font-weight:600;
   padding:6px 10px;border-radius:6px;white-space:nowrap;
   opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;
   border:1px solid rgba(214,173,98,.3);
+  z-index:1001;
 }
-.app-dl-btn:hover::after{opacity:1;transform:translateX(-50%) translateY(2px)}
+.app-dl-btn:hover::after{opacity:1;transform:translateX(-50%) translateY(0)}
 .menu-toggle{display:none;border:0;background:transparent;color:#fff;font-size:26px;cursor:pointer}
 
 /* HERO */
@@ -144,7 +145,7 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
 .about-point{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--navy)}
 .about-point span{width:26px;height:26px;flex:none;display:grid;place-items:center;background:#f8f0df;color:var(--gold-d);border-radius:50%;font-size:13px}
 
-/* ==== NEW: LIVE STATS SECTION ==== */
+/* LIVE STATS */
 .live-stats{
   position:relative;overflow:hidden;padding:100px 0;
   background:
@@ -306,7 +307,7 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
 .js .reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease}
 .js .reveal.in{opacity:1;transform:none}
 
-/* ==== NEW: BACK TO TOP ==== */
+/* BACK TO TOP */
 .back-to-top{
   position:fixed;bottom:28px;right:28px;z-index:999;
   width:50px;height:50px;border-radius:50%;
@@ -326,7 +327,170 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
 }
 .back-to-top svg{width:22px;height:22px;display:block}
 
-/* RESPONSIVE */
+/* ==== APP DOWNLOAD MODAL (gold theme) ==== */
+.app-modal-overlay{
+  position:fixed;inset:0;z-index:9999;
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;
+  background:rgba(11,20,40,0);
+  backdrop-filter:blur(0px);
+  opacity:0;visibility:hidden;
+  transition:opacity .3s,visibility .3s,background .3s,backdrop-filter .3s;
+}
+.app-modal-overlay.show{
+  opacity:1;visibility:visible;
+  background:rgba(11,20,40,.75);
+  backdrop-filter:blur(8px);
+}
+.app-modal{
+  position:relative;
+  width:100%;max-width:440px;
+  background:#fff;
+  border-radius:22px;
+  overflow:hidden;
+  box-shadow:0 40px 100px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.06) inset;
+  transform:translateY(30px) scale(.94);
+  opacity:0;
+  transition:transform .4s cubic-bezier(.2,.9,.3,1.2),opacity .3s;
+}
+.app-modal-overlay.show .app-modal{
+  transform:translateY(0) scale(1);
+  opacity:1;
+}
+.app-modal-close{
+  position:absolute;top:14px;right:14px;z-index:3;
+  width:34px;height:34px;border-radius:50%;border:0;
+  background:rgba(255,255,255,.18);
+  backdrop-filter:blur(6px);
+  color:#fff;cursor:pointer;
+  display:grid;place-items:center;
+  transition:background .2s,transform .2s;
+}
+.app-modal-close:hover{background:rgba(255,255,255,.35);transform:rotate(90deg)}
+.app-modal-close svg{width:16px;height:16px}
+
+/* Hero (gold gradient) */
+.app-modal-hero{
+  position:relative;height:190px;
+  background:
+    radial-gradient(400px 200px at 20% 20%,rgba(240,212,156,.35),transparent 60%),
+    radial-gradient(400px 200px at 80% 80%,rgba(167,122,49,.4),transparent 60%),
+    linear-gradient(140deg,#0b1428,#1b3254);
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+.app-modal-hero::before{
+  content:"";position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
+  background-size:22px 22px;
+  -webkit-mask-image:radial-gradient(ellipse at center,#000 20%,transparent 75%);
+  mask-image:radial-gradient(ellipse at center,#000 20%,transparent 75%);
+}
+.app-modal-phone{
+  position:relative;z-index:2;
+  width:78px;height:130px;border-radius:15px;
+  background:linear-gradient(145deg,#0b1428,#172844);
+  padding:6px;
+  box-shadow:0 14px 30px rgba(0,0,0,.4),0 0 0 1px rgba(214,173,98,.25) inset;
+  transform:rotate(-6deg);
+  animation:phoneFloat 4s ease-in-out infinite;
+}
+@keyframes phoneFloat{
+  50%{transform:rotate(-6deg) translateY(-6px)}
+}
+.app-modal-phone::before{
+  content:"";position:absolute;top:6px;left:50%;transform:translateX(-50%);
+  width:24px;height:4px;background:#0b1428;border-radius:0 0 4px 4px;z-index:2;
+}
+.app-modal-phone-screen{
+  width:100%;height:100%;border-radius:10px;
+  background:linear-gradient(160deg,var(--gold-2),var(--gold));
+  display:grid;place-items:center;
+}
+.app-modal-phone-logo{
+  width:36px;height:36px;border-radius:11px;
+  background:#0b1428;color:var(--gold-2);
+  font-weight:800;font-size:18px;
+  display:grid;place-items:center;
+  font-family:'Manrope',sans-serif;
+}
+.app-modal-badge{
+  position:absolute;z-index:3;top:16px;left:16px;
+  display:inline-flex;align-items:center;gap:7px;
+  padding:6px 12px;
+  background:rgba(255,255,255,.15);
+  border:1px solid rgba(255,255,255,.25);
+  border-radius:30px;color:#fff;
+  font-size:11px;font-weight:700;letter-spacing:.3px;
+  backdrop-filter:blur(8px);
+}
+.app-modal-badge-dot{
+  width:6px;height:6px;background:#fbbf24;border-radius:50%;
+  box-shadow:0 0 0 0 rgba(251,191,36,.6);
+  animation:badgePulse 2s infinite;
+}
+@keyframes badgePulse{
+  70%{box-shadow:0 0 0 8px rgba(251,191,36,0)}
+  100%{box-shadow:0 0 0 0 rgba(251,191,36,0)}
+}
+
+/* Body */
+.app-modal-body{padding:26px 26px 24px;text-align:center}
+.app-modal-body h3{
+  font-size:21px;font-weight:800;color:#1e293b;
+  margin:0 0 10px;letter-spacing:-.3px;
+  font-family:'Manrope',sans-serif;
+}
+.app-modal-body>p{
+  font-size:13px;color:#64748b;line-height:1.65;margin:0 0 18px;
+}
+.app-modal-features{
+  display:flex;justify-content:center;gap:8px;
+  margin-bottom:20px;flex-wrap:wrap;
+}
+.app-modal-feature{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 10px;background:#f8fafc;
+  border:1px solid #e8edf0;border-radius:20px;
+  font-size:11px;font-weight:600;color:#475569;
+}
+.app-modal-feature span{font-size:13px}
+.app-modal-stores{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;
+  margin-bottom:18px;
+}
+.store-btn{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;background:#0b1428;
+  border-radius:10px;color:#fff;text-decoration:none;
+  transition:transform .2s,background .2s,box-shadow .2s;
+  text-align:left;border:1px solid transparent;
+}
+.store-btn:hover{
+  background:#172844;
+  transform:translateY(-2px);
+  box-shadow:0 8px 20px rgba(11,20,40,.3);
+  border-color:rgba(214,173,98,.35);
+}
+.store-btn svg{width:22px;height:22px;flex-shrink:0;color:#fff}
+.store-btn div{display:flex;flex-direction:column;line-height:1.2;min-width:0}
+.store-btn small{
+  font-size:8px;font-weight:500;letter-spacing:.5px;
+  text-transform:uppercase;color:#b7c2d4;
+}
+.store-btn strong{font-size:12px;font-weight:700;white-space:nowrap}
+.app-modal-note{
+  display:flex;align-items:flex-start;gap:8px;
+  padding:12px;background:#fef9ec;
+  border:1px solid #f4e0b0;border-radius:10px;
+  font-size:11px;color:#7a5c1e;line-height:1.55;
+  text-align:left;margin:0;
+}
+.app-modal-note span{flex-shrink:0;font-size:13px;margin-top:1px;color:var(--gold-d)}
+
+/* Responsive */
 @media(max-width:1000px){
   .hero-grid{grid-template-columns:1fr;gap:20px}
   .stage{height:460px}
@@ -365,6 +529,13 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
   .footer-bottom{flex-direction:column}
   .stats-grid{grid-template-columns:1fr}
   .back-to-top{bottom:18px;right:18px;width:44px;height:44px}
+  .app-dl-btn::after{display:none}
+
+  .app-modal{max-width:100%;border-radius:18px}
+  .app-modal-hero{height:160px}
+  .app-modal-body{padding:22px 20px 20px}
+  .app-modal-body h3{font-size:19px}
+  .app-modal-stores{grid-template-columns:1fr}
 }
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
@@ -393,18 +564,18 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
     </nav>
 
     <div class="nav-actions">
-      {{-- ==== NEW: APP DOWNLOAD ICON ==== --}}
-      <a href="#"
-         class="app-dl-btn"
-         data-tooltip="Download App"
-         aria-label="Download our mobile app"
-         @if(!Route::has('app.download')) onclick="alert('Mobile app coming soon!')" @endif>
+      {{-- APP DOWNLOAD ICON → opens modal --}}
+      <button type="button"
+              class="app-dl-btn"
+              data-tooltip="Download App"
+              aria-label="Download our mobile app"
+              onclick="openAppModal()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
           <polyline points="7 10 12 15 17 10"/>
           <line x1="12" y1="15" x2="12" y2="3"/>
         </svg>
-      </a>
+      </button>
 
       @auth
         <a href="{{ route('dashboard') }}" class="btn btn-gold">Dashboard</a>
@@ -524,8 +695,7 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
   </div>
 </section>
 
-{{-- ==== NEW: LIVE STATS SECTION ==== --}}
-{{-- ডেটা: HomeController থেকে আসবে $liveStats array হিসেবে --}}
+{{-- LIVE STATS --}}
 <section class="live-stats" id="live-stats">
   <div class="container">
 
@@ -537,7 +707,6 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
 
     <div class="stats-grid">
 
-      {{-- Active Shares Sold --}}
       <div class="stat-card reveal">
         <div class="stat-icon">📈</div>
         <div class="stat-label">Shares Sold</div>
@@ -552,7 +721,6 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
         <div class="stat-trend">Live updates</div>
       </div>
 
-      {{-- Active Shares Bought --}}
       <div class="stat-card reveal">
         <div class="stat-icon">🛒</div>
         <div class="stat-label">Shares Bought</div>
@@ -567,7 +735,6 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
         <div class="stat-trend">Live updates</div>
       </div>
 
-      {{-- Available Projects --}}
       <div class="stat-card reveal">
         <div class="stat-icon">🏢</div>
         <div class="stat-label">Available Projects</div>
@@ -581,7 +748,6 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
         <div class="stat-trend">Updated live</div>
       </div>
 
-      {{-- My Shares --}}
       <div class="stat-card reveal">
         <div class="stat-icon">💼</div>
         <div class="stat-label">
@@ -824,12 +990,82 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
   </div>
 </footer>
 
-{{-- ==== NEW: BACK TO TOP BUTTON ==== --}}
+{{-- BACK TO TOP BUTTON --}}
 <button class="back-to-top" id="backToTop" aria-label="Back to top" title="Back to top">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
     <polyline points="18 15 12 9 6 15"/>
   </svg>
 </button>
+
+{{-- ==== APP DOWNLOAD MODAL ==== --}}
+<div class="app-modal-overlay" id="appModalOverlay" onclick="closeAppModalOnOverlay(event)">
+  <div class="app-modal" role="dialog" aria-modal="true" aria-labelledby="appModalTitle">
+
+    <button type="button" class="app-modal-close" onclick="closeAppModal()" aria-label="Close">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+
+    <div class="app-modal-hero">
+      <div class="app-modal-phone">
+        <div class="app-modal-phone-screen">
+          <div class="app-modal-phone-logo">D</div>
+        </div>
+      </div>
+
+      <div class="app-modal-badge">
+        <span class="app-modal-badge-dot"></span>
+        Coming Soon
+      </div>
+    </div>
+
+    <div class="app-modal-body">
+      <h3 id="appModalTitle">Dhakaiya Investments App</h3>
+      <p>
+        Take your investments with you. Get real-time updates,
+        manage your portfolio, and trade shares anytime — right from
+        your phone.
+      </p>
+
+      <div class="app-modal-features">
+        <div class="app-modal-feature"><span>📊</span> Live portfolio</div>
+        <div class="app-modal-feature"><span>🔔</span> Instant alerts</div>
+        <div class="app-modal-feature"><span>🔐</span> Secure login</div>
+      </div>
+
+      <div class="app-modal-stores">
+        <a href="#" class="store-btn" onclick="event.preventDefault(); storeComingSoon('Google Play Store');">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 0 1-.61-.92V2.734a1 1 0 0 1 .609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.198l2.807 1.626a1 1 0 0 1 0 1.73l-2.808 1.626L15.199 12l2.499-2.491zM5.864 2.658L16.802 8.99l-2.303 2.303-8.635-8.635z"/>
+          </svg>
+          <div>
+            <small>GET IT ON</small>
+            <strong>Google Play</strong>
+          </div>
+        </a>
+
+        <a href="#" class="store-btn" onclick="event.preventDefault(); storeComingSoon('Apple App Store');">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+          </svg>
+          <div>
+            <small>Download on the</small>
+            <strong>App Store</strong>
+          </div>
+        </a>
+      </div>
+
+      <p class="app-modal-note">
+        <span>✦</span>
+        We're putting the finishing touches on our mobile apps.
+        They'll be available very soon!
+      </p>
+    </div>
+
+  </div>
+</div>
 
 <script>
 (function () {
@@ -908,7 +1144,7 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
 
   document.getElementById('currentYear').textContent = new Date().getFullYear();
 
-  // ==== NEW: BACK TO TOP LOGIC ====
+  // BACK TO TOP LOGIC
   var backToTop = document.getElementById('backToTop');
   function toggleBackToTop(){
     backToTop.classList.toggle('show', window.scrollY > 500);
@@ -920,6 +1156,75 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
     window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
   });
 })();
+
+/* ==== APP DOWNLOAD MODAL LOGIC ==== */
+function openAppModal() {
+  document.getElementById('appModalOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeAppModal() {
+  document.getElementById('appModalOverlay').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+function closeAppModalOnOverlay(event) {
+  if (event.target.id === 'appModalOverlay') {
+    closeAppModal();
+  }
+}
+
+function storeComingSoon(storeName) {
+  var modal = document.querySelector('.app-modal');
+  if (!modal) return;
+
+  var oldToast = modal.querySelector('.app-modal-toast');
+  if (oldToast) oldToast.remove();
+
+  var toast = document.createElement('div');
+  toast.className = 'app-modal-toast';
+  toast.textContent = storeName + ' — coming very soon!';
+  toast.style.cssText = [
+    'position:absolute',
+    'top:50%','left:50%',
+    'transform:translate(-50%,-50%) scale(0.9)',
+    'background:#0b1428',
+    'color:#fff',
+    'padding:12px 20px',
+    'border-radius:10px',
+    'font-size:12px',
+    'font-weight:600',
+    'box-shadow:0 10px 30px rgba(0,0,0,.4)',
+    'opacity:0',
+    'transition:opacity .25s,transform .25s',
+    'z-index:10',
+    'white-space:nowrap',
+    'border:1px solid rgba(214,173,98,.35)'
+  ].join(';');
+
+  modal.appendChild(toast);
+
+  requestAnimationFrame(function(){
+    toast.style.opacity = '1';
+    toast.style.transform = 'translate(-50%,-50%) scale(1)';
+  });
+
+  setTimeout(function(){
+    toast.style.opacity = '0';
+    toast.style.transform = 'translate(-50%,-50%) scale(0.9)';
+    setTimeout(function(){ toast.remove(); }, 250);
+  }, 2000);
+}
+
+// ESC closes modal
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') {
+    var overlay = document.getElementById('appModalOverlay');
+    if (overlay && overlay.classList.contains('show')) {
+      closeAppModal();
+    }
+  }
+});
 </script>
 
 </body>
