@@ -39,6 +39,31 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
 .btn-gold:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(214,173,98,.42)}
 .btn-ghost{color:#fff;border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.04)}
 .btn-ghost:hover{border-color:var(--gold);color:var(--gold-2)}
+
+/* ==== NEW: APP DOWNLOAD ICON ==== */
+.app-dl-btn{
+  width:42px;height:42px;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(214,173,98,.35);
+  color:var(--gold-2);cursor:pointer;
+  transition:transform .25s,background .25s,border-color .25s,color .25s;
+  position:relative;
+}
+.app-dl-btn:hover{
+  background:linear-gradient(135deg,var(--gold-2),var(--gold));
+  color:var(--ink);border-color:transparent;transform:translateY(-2px);
+}
+.app-dl-btn svg{width:20px;height:20px;display:block}
+.app-dl-btn::after{
+  content:attr(data-tooltip);
+  position:absolute;top:calc(100% + 10px);left:50%;transform:translateX(-50%);
+  background:var(--ink);color:#fff;font-size:11px;font-weight:600;
+  padding:6px 10px;border-radius:6px;white-space:nowrap;
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;
+  border:1px solid rgba(214,173,98,.3);
+}
+.app-dl-btn:hover::after{opacity:1;transform:translateX(-50%) translateY(2px)}
 .menu-toggle{display:none;border:0;background:transparent;color:#fff;font-size:26px;cursor:pointer}
 
 /* HERO */
@@ -119,6 +144,113 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
 .about-point{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--navy)}
 .about-point span{width:26px;height:26px;flex:none;display:grid;place-items:center;background:#f8f0df;color:var(--gold-d);border-radius:50%;font-size:13px}
 
+/* ==== NEW: LIVE STATS SECTION ==== */
+.live-stats{
+  position:relative;overflow:hidden;padding:100px 0;
+  background:
+    radial-gradient(700px 400px at 10% 20%,rgba(214,173,98,.14),transparent 60%),
+    radial-gradient(700px 400px at 90% 80%,rgba(60,100,170,.20),transparent 60%),
+    linear-gradient(160deg,#0b1428 0%,#122240 60%,#17304f 100%);
+  color:#fff;
+}
+.live-stats::before{
+  content:"";position:absolute;inset:0;opacity:.4;
+  background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);
+  background-size:56px 56px;
+  -webkit-mask-image:radial-gradient(ellipse at 50% 50%,#000 20%,transparent 75%);
+  mask-image:radial-gradient(ellipse at 50% 50%,#000 20%,transparent 75%);
+  pointer-events:none;
+}
+.live-stats .section-label{color:var(--gold-2)}
+.live-stats .section-heading h2{color:#fff}
+.live-stats .section-heading p{color:#b7c2d4}
+
+.live-badge{
+  display:inline-flex;align-items:center;gap:9px;
+  padding:8px 15px;border:1px solid rgba(214,173,98,.35);
+  border-radius:50px;background:rgba(214,173,98,.08);
+  color:var(--gold-2);font-size:12px;font-weight:700;
+  margin-bottom:16px;letter-spacing:.5px;text-transform:uppercase;
+}
+.live-badge i{
+  width:8px;height:8px;background:#22c55e;border-radius:50%;
+  box-shadow:0 0 0 0 rgba(34,197,94,.7);animation:livePulse 1.8s infinite;
+}
+@keyframes livePulse{
+  70%{box-shadow:0 0 0 10px rgba(34,197,94,0)}
+  100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}
+}
+
+.stats-grid{
+  position:relative;z-index:2;
+  display:grid;grid-template-columns:repeat(4,1fr);gap:22px;
+}
+.stat-card{
+  position:relative;overflow:hidden;
+  padding:28px 24px;border-radius:18px;
+  background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.02));
+  border:1px solid rgba(255,255,255,.09);
+  backdrop-filter:blur(10px);
+  transition:transform .3s,border-color .3s,box-shadow .3s;
+}
+.stat-card:hover{
+  transform:translateY(-6px);
+  border-color:rgba(214,173,98,.5);
+  box-shadow:0 20px 40px rgba(0,0,0,.35);
+}
+.stat-card::before{
+  content:"";position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  opacity:.7;
+}
+.stat-icon{
+  width:52px;height:52px;border-radius:13px;
+  display:grid;place-items:center;font-size:24px;
+  background:linear-gradient(135deg,rgba(240,212,156,.18),rgba(214,173,98,.08));
+  border:1px solid rgba(214,173,98,.25);
+  margin-bottom:18px;
+  color:var(--gold-2);
+}
+.stat-label{
+  font-size:12px;font-weight:700;letter-spacing:.5px;
+  text-transform:uppercase;color:#98a6bb;margin-bottom:8px;
+}
+.stat-value{
+  font-family:'Manrope',sans-serif;
+  font-size:clamp(26px,3vw,34px);font-weight:800;
+  line-height:1;color:#fff;letter-spacing:-1px;
+  display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;
+}
+.stat-value small{
+  font-size:13px;font-weight:600;color:var(--gold-2);
+  letter-spacing:0;
+}
+.stat-sub{
+  margin-top:10px;font-size:12px;color:#7f8ca1;line-height:1.5;
+}
+.stat-sub .arrow-up{color:#22c55e;font-weight:700}
+.stat-sub .arrow-down{color:#f87171;font-weight:700}
+
+.stat-trend{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 9px;border-radius:20px;
+  background:rgba(34,197,94,.12);color:#4ade80;
+  font-size:11px;font-weight:700;margin-top:12px;
+}
+.stat-trend.down{background:rgba(248,113,113,.12);color:#fca5a5}
+
+.live-footer{
+  position:relative;z-index:2;text-align:center;margin-top:44px;
+}
+.live-footer p{
+  color:#98a6bb;font-size:13px;
+  display:inline-flex;align-items:center;gap:8px;
+  padding:10px 20px;border-radius:50px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+}
+.live-footer svg{width:14px;height:14px}
+
 /* PLATFORM */
 .platform{background:var(--bg)}
 .feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;perspective:1200px}
@@ -174,12 +306,33 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
 .js .reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease}
 .js .reveal.in{opacity:1;transform:none}
 
+/* ==== NEW: BACK TO TOP ==== */
+.back-to-top{
+  position:fixed;bottom:28px;right:28px;z-index:999;
+  width:50px;height:50px;border-radius:50%;
+  display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--gold-2),var(--gold));
+  color:var(--ink);border:0;cursor:pointer;
+  box-shadow:0 10px 30px rgba(214,173,98,.4);
+  opacity:0;visibility:hidden;transform:translateY(20px) scale(.85);
+  transition:opacity .3s,visibility .3s,transform .3s,box-shadow .3s;
+}
+.back-to-top.show{
+  opacity:1;visibility:visible;transform:translateY(0) scale(1);
+}
+.back-to-top:hover{
+  box-shadow:0 14px 40px rgba(214,173,98,.6);
+  transform:translateY(-3px) scale(1.05);
+}
+.back-to-top svg{width:22px;height:22px;display:block}
+
 /* RESPONSIVE */
 @media(max-width:1000px){
   .hero-grid{grid-template-columns:1fr;gap:20px}
   .stage{height:460px}
   .footer-grid{grid-template-columns:1fr 1fr}
   .feature-grid{grid-template-columns:repeat(2,1fr)}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
 }
 @media(max-width:768px){
   .navbar{height:70px}
@@ -194,6 +347,7 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
   .step-grid::before{display:none}
   .cta-box{padding:40px 28px;flex-direction:column;align-items:flex-start}
   .section{padding:75px 0}
+  .live-stats{padding:75px 0}
 }
 @media(max-width:520px){
   .container{width:min(100% - 30px,1160px)}
@@ -209,6 +363,8 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
   .footer-grid{grid-template-columns:1fr 1fr;gap:35px 20px}
   .footer-brand{grid-column:1/-1}
   .footer-bottom{flex-direction:column}
+  .stats-grid{grid-template-columns:1fr}
+  .back-to-top{bottom:18px;right:18px;width:44px;height:44px}
 }
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
@@ -231,11 +387,25 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
       <a href="#home">Home</a>
       <a href="#about">About us</a>
       <a href="#platform">Platform</a>
+      <a href="#live-stats">Live</a>
       <a href="#how-it-works">How it works</a>
       <a href="#faq">FAQ</a>
     </nav>
 
     <div class="nav-actions">
+      {{-- ==== NEW: APP DOWNLOAD ICON ==== --}}
+      <a href="#"
+         class="app-dl-btn"
+         data-tooltip="Download App"
+         aria-label="Download our mobile app"
+         @if(!Route::has('app.download')) onclick="alert('Mobile app coming soon!')" @endif>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </a>
+
       @auth
         <a href="{{ route('dashboard') }}" class="btn btn-gold">Dashboard</a>
       @else
@@ -349,6 +519,110 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
         <div class="about-point"><span>✓</span>User support</div>
         <div class="about-point"><span>✓</span>Account information</div>
       </div>
+    </div>
+
+  </div>
+</section>
+
+{{-- ==== NEW: LIVE STATS SECTION ==== --}}
+{{-- ডেটা: HomeController থেকে আসবে $liveStats array হিসেবে --}}
+<section class="live-stats" id="live-stats">
+  <div class="container">
+
+    <div class="section-heading reveal">
+      <div class="live-badge"><i></i> Live Platform Activity</div>
+      <h2>Real-time platform statistics</h2>
+      <p>See what's happening right now across Dhakaiya Investments.</p>
+    </div>
+
+    <div class="stats-grid">
+
+      {{-- Active Shares Sold --}}
+      <div class="stat-card reveal">
+        <div class="stat-icon">📈</div>
+        <div class="stat-label">Shares Sold</div>
+        <div class="stat-value">
+          {{ number_format($liveStats['shares_sold'] ?? 0) }}
+          <small>shares</small>
+        </div>
+        <div class="stat-sub">
+          <span class="arrow-up">↑</span>
+          {{ number_format($liveStats['shares_sold_today'] ?? 0) }} today
+        </div>
+        <div class="stat-trend">Live updates</div>
+      </div>
+
+      {{-- Active Shares Bought --}}
+      <div class="stat-card reveal">
+        <div class="stat-icon">🛒</div>
+        <div class="stat-label">Shares Bought</div>
+        <div class="stat-value">
+          {{ number_format($liveStats['shares_bought'] ?? 0) }}
+          <small>shares</small>
+        </div>
+        <div class="stat-sub">
+          <span class="arrow-up">↑</span>
+          {{ number_format($liveStats['shares_bought_today'] ?? 0) }} today
+        </div>
+        <div class="stat-trend">Live updates</div>
+      </div>
+
+      {{-- Available Projects --}}
+      <div class="stat-card reveal">
+        <div class="stat-icon">🏢</div>
+        <div class="stat-label">Available Projects</div>
+        <div class="stat-value">
+          {{ number_format($liveStats['available_projects'] ?? 0) }}
+          <small>projects</small>
+        </div>
+        <div class="stat-sub">
+          {{ number_format($liveStats['total_projects'] ?? 0) }} total · {{ number_format($liveStats['funded_projects'] ?? 0) }} funded
+        </div>
+        <div class="stat-trend">Updated live</div>
+      </div>
+
+      {{-- My Shares --}}
+      <div class="stat-card reveal">
+        <div class="stat-icon">💼</div>
+        <div class="stat-label">
+          {{ auth()->check() ? 'My Shares' : 'Total Investors' }}
+        </div>
+        <div class="stat-value">
+          @auth
+            {{ number_format($liveStats['my_shares'] ?? 0) }}
+            <small>shares</small>
+          @else
+            {{ number_format($liveStats['total_investors'] ?? 0) }}
+            <small>investors</small>
+          @endauth
+        </div>
+        <div class="stat-sub">
+          @auth
+            {{ number_format($liveStats['my_invested_bdt'] ?? 0) }} ৳ invested
+          @else
+            {{ number_format($liveStats['active_investors'] ?? 0) }} active this month
+          @endauth
+        </div>
+        <div class="stat-trend">
+          @auth
+            <span>Your portfolio</span>
+          @else
+            <span>Community</span>
+          @endauth
+        </div>
+      </div>
+
+    </div>
+
+    <div class="live-footer reveal">
+      <p>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        Last updated: <strong>{{ now()->format('h:i A') }}</strong>
+        · <a href="{{ route('login') }}" style="color:var(--gold-2);font-weight:700;margin-left:4px">Sign in to trade →</a>
+      </p>
     </div>
 
   </div>
@@ -516,6 +790,7 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
         <a href="#home">Home</a>
         <a href="#about">About us</a>
         <a href="#platform">Platform</a>
+        <a href="#live-stats">Live Stats</a>
         <a href="#faq">FAQ</a>
       </div>
 
@@ -548,6 +823,13 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
     </div>
   </div>
 </footer>
+
+{{-- ==== NEW: BACK TO TOP BUTTON ==== --}}
+<button class="back-to-top" id="backToTop" aria-label="Back to top" title="Back to top">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="18 15 12 9 6 15"/>
+  </svg>
+</button>
 
 <script>
 (function () {
@@ -625,6 +907,18 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
   }
 
   document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+  // ==== NEW: BACK TO TOP LOGIC ====
+  var backToTop = document.getElementById('backToTop');
+  function toggleBackToTop(){
+    backToTop.classList.toggle('show', window.scrollY > 500);
+  }
+  toggleBackToTop();
+  window.addEventListener('scroll', toggleBackToTop, { passive: true });
+
+  backToTop.addEventListener('click', function(){
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+  });
 })();
 </script>
 

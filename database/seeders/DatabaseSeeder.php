@@ -23,3 +23,4 @@ class DatabaseSeeder extends Seeder
         ]);
     }
 }
+//php artisan app:create-super-admin
