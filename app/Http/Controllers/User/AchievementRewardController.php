@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
+use App\Models\RewardCategory;
 
 class AchievementRewardController extends Controller
 {
@@ -10,43 +11,41 @@ class AchievementRewardController extends Controller
     {
         $user = auth()->user();
 
-        $achievements = collect([]);
+        $invested = (float) $user->shareHoldings()
+            ->where('shares', '>', 0)
+            ->get()
+            ->sum(fn ($h) => (float) $h->invested_bdt);
+
+        // Super Admin-এর সেট করা Active reward category-ই এখানে milestone হিসেবে দেখায়
+        $achievements = RewardCategory::where('status', true)
+            ->orderBy('min_investment')
+            ->orderBy('id')
+            ->get()
+            ->map(function ($c) use ($invested) {
+                $min = (float) $c->min_investment;
+
+                if ($invested >= $min) {
+                    $state = 'completed';
+                } elseif ($invested > 0) {
+                    $state = 'in_progress';
+                } else {
+                    $state = 'locked';
+                }
+
+                $c->state = $state;
+                $c->progress = $min > 0 ? min(100, (int) floor(($invested / $min) * 100)) : 100;
+                $c->remaining = max(0, $min - $invested);
+
+                return $c;
+            });
 
         $summary = [
-            'total' => 0,
-            'completed' => 0,
-            'in_progress' => 0,
-            'locked' => 0,
+            'total' => $achievements->count(),
+            'completed' => $achievements->where('state', 'completed')->count(),
+            'in_progress' => $achievements->where('state', 'in_progress')->count(),
+            'locked' => $achievements->where('state', 'locked')->count(),
         ];
 
-        $categories = [
-            [
-                'name' => 'Profile Completion',
-                'description' => 'Complete your account profile.',
-                'icon' => 'fa-user-check',
-            ],
-            [
-                'name' => 'Membership Milestones',
-                'description' => 'Membership-related milestones.',
-                'icon' => 'fa-award',
-            ],
-            [
-                'name' => 'Platform Participation',
-                'description' => 'Participation in platform activities.',
-                'icon' => 'fa-users',
-            ],
-            [
-                'name' => 'Learning & Engagement',
-                'description' => 'Learning and engagement milestones.',
-                'icon' => 'fa-graduation-cap',
-            ],
-        ];
-
-        return view('user.rewards.achievements', compact(
-            'user',
-            'achievements',
-            'summary',
-            'categories'
-        ));
+        return view('user.rewards.achievements', compact('user', 'achievements', 'summary', 'invested'));
     }
 }

@@ -4,288 +4,197 @@
 
 @section('content')
 
-<div class="page-header">
-    <div>
-        <h2>Sales History</h2>
-        <p>View your previous share sale records.</p>
-    </div>
-</div>
+@include('partials.styles')
 
-<style>
-    .sales-summary {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-        gap: 18px;
-        margin-bottom: 25px;
-    }
+<div class="inv-page">
 
-    .sales-card {
-        background: #fff;
-        border: 1px solid #e8edf0;
-        border-radius: 12px;
-        padding: 22px;
-    }
-
-    .sales-card .label {
-        color: #84919f;
-        font-size: 13px;
-        margin-bottom: 10px;
-    }
-
-    .sales-card h3 {
-        font-size: 25px;
-        margin: 0;
-        color: #1e293b;
-    }
-
-    .sales-panel {
-        background: #fff;
-        border: 1px solid #e8edf0;
-        border-radius: 12px;
-        padding: 22px;
-        margin-bottom: 20px;
-    }
-
-    .sales-panel-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 15px;
-        margin-bottom: 20px;
-    }
-
-    .sales-filter {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-    }
-
-    .sales-filter select {
-        padding: 10px 14px;
-        border: 1px solid #e8edf0;
-        border-radius: 7px;
-        background: #fff;
-        min-width: 150px;
-    }
-
-    .sales-table {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 850px;
-    }
-
-    .sales-table th,
-    .sales-table td {
-        padding: 14px 12px;
-        border-bottom: 1px solid #edf0f2;
-        text-align: left;
-        font-size: 13px;
-    }
-
-    .sales-table th {
-        color: #84919f;
-        font-weight: 600;
-        background: #f8fafb;
-    }
-
-    .sales-empty {
-        text-align: center;
-        padding: 55px 15px;
-    }
-
-    .sales-empty i {
-        font-size: 45px;
-        color: #cbd5e1;
-        margin-bottom: 15px;
-    }
-
-    .sales-empty h3 {
-        color: #334155;
-        margin-bottom: 8px;
-    }
-
-    .sales-empty p {
-        color: #84919f;
-        font-size: 13px;
-    }
-
-    .sales-notice {
-        background: #fff8e6;
-        border: 1px solid #f5dfa5;
-        color: #856404;
-        border-radius: 10px;
-        padding: 16px;
-        font-size: 13px;
-        line-height: 1.7;
-    }
-
-    .status-badge {
-        display: inline-block;
-        padding: 5px 10px;
-        border-radius: 20px;
-        font-size: 11px;
-        font-weight: 600;
-    }
-
-    @media(max-width: 576px) {
-        .sales-panel {
-            padding: 15px;
-        }
-
-        .sales-filter {
-            width: 100%;
-        }
-
-        .sales-filter select {
-            width: 100%;
-        }
-    }
-</style>
-
-{{-- Summary --}}
-<div class="sales-summary">
-
-    <div class="sales-card">
-        <div class="label">Total Sales Records</div>
-        <h3>{{ $summary['total_records'] }}</h3>
-    </div>
-
-    <div class="sales-card">
-        <div class="label">Pending Sales</div>
-        <h3>{{ $summary['pending'] }}</h3>
-    </div>
-
-    <div class="sales-card">
-        <div class="label">Completed Sales</div>
-        <h3>{{ $summary['completed'] }}</h3>
-    </div>
-
-    <div class="sales-card">
-        <div class="label">Rejected Sales</div>
-        <h3>{{ $summary['rejected'] }}</h3>
-    </div>
-
-</div>
-
-{{-- Sales Table --}}
-<div class="sales-panel">
-
-    <div class="sales-panel-header">
-
+    {{-- Heading --}}
+    <div class="inv-heading">
         <div>
-            <h3 style="margin:0 0 5px;">My Sales Records</h3>
-            <p style="margin:0;color:#84919f;font-size:13px;">
-                Review your share sale history.
-            </p>
+            <h2>Sales History</h2>
+            <p>View your previous share resale records.</p>
         </div>
 
-        <form method="GET"
-              action="{{ route('user.sales-history.index') }}"
-              class="sales-filter">
+        <span class="inv-badge"><i class="fas fa-hand-holding-usd"></i> Sales Records</span>
+    </div>
 
-            <select name="status" onchange="this.form.submit()">
-                <option value="all" {{ $status === 'all' ? 'selected' : '' }}>
-                    All Status
-                </option>
+    @if(session('success'))
+        <div class="inv-alert success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
+    @endif
 
-                <option value="pending" {{ $status === 'pending' ? 'selected' : '' }}>
-                    Pending
-                </option>
+    @if(session('error'))
+        <div class="inv-alert error"><i class="fas fa-exclamation-circle"></i> {{ session('error') }}</div>
+    @endif
 
-                <option value="approved" {{ $status === 'approved' ? 'selected' : '' }}>
-                    Approved
-                </option>
 
-                <option value="completed" {{ $status === 'completed' ? 'selected' : '' }}>
-                    Completed
-                </option>
+    @php
+        $totalPL = (float) $summary['total_profit_loss_bdt'];
+    @endphp
 
-                <option value="rejected" {{ $status === 'rejected' ? 'selected' : '' }}>
-                    Rejected
-                </option>
+    {{-- Summary --}}
+    <div class="inv-summary">
+
+        <div class="inv-stat">
+            <div class="icon"><i class="fas fa-receipt"></i></div>
+            <div class="label">Total Sales</div>
+            <h3>{{ number_format($summary['total_records']) }}</h3>
+            <small>{{ number_format($summary['total_shares']) }} shares sold</small>
+        </div>
+
+        <div class="inv-stat">
+            <div class="icon"><i class="fas fa-coins"></i></div>
+            <div class="label">Total Received (BDT)</div>
+            <h3>{{ number_format((float) $summary['total_received_bdt'], 2) }}</h3>
+            <small>Net amount</small>
+        </div>
+
+        <div class="inv-stat">
+            <div class="icon"><i class="fas fa-chart-line"></i></div>
+            <div class="label">Total Profit / Loss (BDT)</div>
+            <h3 class="{{ $totalPL >= 0 ? 'pl-pos' : 'pl-neg' }}">
+                {{ $totalPL >= 0 ? '+' : '' }}{{ number_format($totalPL, 2) }}
+            </h3>
+            <small>From resales</small>
+        </div>
+
+        <div class="inv-stat">
+            <div class="icon"><i class="fas fa-check-circle"></i></div>
+            <div class="label">Approved / Completed</div>
+            <h3>{{ number_format($summary['approved'] + $summary['completed']) }}</h3>
+            <small>{{ number_format($summary['pending']) }} pending · {{ number_format($summary['rejected']) }} rejected</small>
+        </div>
+
+    </div>
+
+
+    {{-- Records --}}
+    <div class="inv-panel">
+
+        <div class="inv-panel-header">
+            <h4>My Sales Records</h4>
+            <p>Review your share resale history.</p>
+        </div>
+
+        <form method="GET" action="{{ route('user.sales-history.index') }}" class="inv-filter">
+
+            <select name="status">
+                <option value="all" {{ $status === 'all' ? 'selected' : '' }}>All Status</option>
+                <option value="pending" {{ $status === 'pending' ? 'selected' : '' }}>Pending</option>
+                <option value="approved" {{ $status === 'approved' ? 'selected' : '' }}>Approved</option>
+                <option value="completed" {{ $status === 'completed' ? 'selected' : '' }}>Completed</option>
+                <option value="rejected" {{ $status === 'rejected' ? 'selected' : '' }}>Rejected</option>
             </select>
+
+            <button type="submit" class="inv-btn primary"><i class="fas fa-filter"></i> Apply Filter</button>
+
+            <a href="{{ route('user.sales-history.index') }}" class="inv-btn outline">Reset</a>
 
         </form>
 
+        <div class="inv-table-wrap">
+
+            <table class="inv-table" style="min-width:900px;">
+
+                <thead>
+                    <tr>
+                        <th>Sale ID</th>
+                        <th>Project</th>
+                        <th>Shares</th>
+                        <th>Net Amount (BDT)</th>
+                        <th>Credited To Wallet</th>
+                        <th>Profit / Loss (BDT)</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @forelse($sales as $sale)
+
+                        @php $pl = (float) $sale->profit_loss_bdt; @endphp
+
+                        <tr>
+                            <td>#{{ $sale->id }}</td>
+
+                            <td>
+                                @if($sale->project)
+                                    <a href="{{ route('user.project-details.show', $sale->project->slug) }}"
+                                       style="color:var(--text); font-weight:600; text-decoration:none;">
+                                        {{ $sale->project->name }}
+                                    </a>
+                                    <small>{{ $sale->project->company->name ?? 'N/A' }}</small>
+                                @else
+                                    <span style="color:var(--muted);">Project removed</span>
+                                @endif
+                            </td>
+
+                            <td><strong>{{ number_format($sale->shares) }}</strong></td>
+
+                            <td>{{ number_format((float) $sale->net_bdt, 2) }}</td>
+
+                            <td>
+                                @if($sale->wallet_amount)
+                                    {{ number_format((float) $sale->wallet_amount, 2) }} {{ $sale->wallet_currency }}
+                                @else
+                                    —
+                                @endif
+                            </td>
+
+                            <td class="{{ $pl >= 0 ? 'pl-pos' : 'pl-neg' }}">
+                                {{ $pl >= 0 ? '+' : '' }}{{ number_format($pl, 2) }}
+                            </td>
+
+                            <td>
+                                {{ $sale->created_at->format('d M Y') }}
+                                <small>{{ $sale->created_at->format('h:i A') }}</small>
+                            </td>
+
+                            <td>
+                                <span class="st-badge {{ $sale->status }}">{{ ucfirst($sale->status) }}</span>
+                            </td>
+                        </tr>
+
+                    @empty
+
+                        <tr>
+                            <td colspan="8">
+                                <div class="inv-empty">
+                                    <div class="icon"><i class="fas fa-chart-line"></i></div>
+                                    <h4>No Sales Records Found</h4>
+                                    <p>You haven't resold any shares yet. Your resales will appear here.</p>
+                                    <a href="{{ route('user.my-shares.index') }}" class="inv-btn primary">
+                                        <i class="fas fa-chart-pie"></i> Go to My Shares
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+
+                    @endforelse
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        @if($sales->hasPages())
+            <div class="inv-pagination">{{ $sales->links() }}</div>
+        @endif
+
     </div>
 
-    <div style="overflow-x:auto;">
 
-        <table class="sales-table">
-
-            <thead>
-                <tr>
-                    <th>Sale ID</th>
-                    <th>Project Name</th>
-                    <th>Share Reference</th>
-                    <th>Sale Date</th>
-                    <th>Quantity</th>
-                    <th>Status</th>
-                    <th>Details</th>
-                </tr>
-            </thead>
-
-            <tbody>
-
-                @forelse($sales as $sale)
-
-                    <tr>
-                        <td>#{{ $sale->id }}</td>
-                        <td>{{ $sale->project_name }}</td>
-                        <td>{{ $sale->share_reference }}</td>
-                        <td>{{ $sale->sale_date }}</td>
-                        <td>{{ $sale->quantity }}</td>
-                        <td>{{ ucfirst($sale->status) }}</td>
-                        <td>—</td>
-                    </tr>
-
-                @empty
-
-                    <tr>
-                        <td colspan="7">
-
-                            <div class="sales-empty">
-
-                                <i class="fa-solid fa-chart-line"></i>
-
-                                <h3>No Sales Records Found</h3>
-
-                                <p>
-                                    You don't have any share sale records yet.
-                                    Your sales history will appear here when
-                                    the relevant feature becomes available.
-                                </p>
-
-                            </div>
-
-                        </td>
-                    </tr>
-
-                @endforelse
-
-            </tbody>
-
-        </table>
-
+    <div class="inv-notice">
+        <i class="fas fa-info-circle"></i>
+        <div>
+            <h5>Sales Record Information</h5>
+            <p>
+                Profit / Loss is calculated against the amount you originally invested
+                in the shares you sold.
+            </p>
+        </div>
     </div>
-
-</div>
-
-{{-- Notice --}}
-<div class="sales-notice">
-
-    <strong>
-        <i class="fa-solid fa-shield-halved"></i>
-        Important Notice
-    </strong>
-
-    <p style="margin:8px 0 0;">
-        Share sales and resale functionality are currently not activated.
-        Any future transaction feature will require verified business
-        rules, applicable regulatory approval and appropriate security
-        controls.
-    </p>
 
 </div>
 

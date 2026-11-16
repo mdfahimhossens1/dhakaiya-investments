@@ -3,42 +3,49 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Models\RewardCategory;
+use App\Models\RewardLog;
 
 class RewardController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
         $user = auth()->user();
 
-        $status = $request->query('status', 'all');
+        $invested = (float) $user->shareHoldings()
+            ->where('shares', '>', 0)
+            ->get()
+            ->sum(fn ($h) => (float) $h->invested_bdt);
 
-        $allowedStatuses = [
-            'all',
-            'pending',
-            'approved',
-            'rejected',
-        ];
-
-        if (!in_array($status, $allowedStatuses, true)) {
-            $status = 'all';
-        }
-
-        // Real reward records will be connected later.
-        $rewards = collect([]);
+        // সর্বশেষ ১০টি পাওয়া রিওয়ার্ড
+        $rewards = RewardLog::where('user_id', $user->id)
+            ->latest()
+            ->limit(10)
+            ->get();
 
         $summary = [
-            'total_rewards' => 0,
-            'pending' => 0,
-            'approved' => 0,
-            'rejected' => 0,
+            'total_rewards' => RewardLog::where('user_id', $user->id)->count(),
+            'by_currency' => RewardLog::where('user_id', $user->id)
+                ->selectRaw('wallet_currency, SUM(wallet_amount) as total')
+                ->groupBy('wallet_currency')
+                ->pluck('total', 'wallet_currency'),
+            'by_category' => RewardLog::where('user_id', $user->id)
+                ->selectRaw('category, COUNT(*) as c')
+                ->groupBy('category')
+                ->pluck('c', 'category'),
         ];
 
-        return view('user.rewards.index', compact(
-            'user',
-            'rewards',
-            'summary',
-            'status'
-        ));
+        // ইউজার যেগুলো এখন আনলক করেছে
+        $categories = RewardCategory::where('status', true)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get()
+            ->map(function ($c) use ($invested) {
+                $c->is_unlocked = $invested >= (float) $c->min_investment;
+
+                return $c;
+            });
+
+        return view('user.rewards.index', compact('user', 'rewards', 'summary', 'categories', 'invested'));
     }
 }

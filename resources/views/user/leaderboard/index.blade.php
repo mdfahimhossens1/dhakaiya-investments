@@ -1,308 +1,148 @@
 @extends('layouts.app')
 
-@section('title', 'Leaderboard')
+@section('title', 'Resell Leaderboard')
 
 @section('content')
 
-<div class="page-heading">
-    <div>
-        <h2>Leaderboard</h2>
-        <p>Explore platform participation and achievement rankings.</p>
-    </div>
-</div>
+@include('user.investment._styles')
 
 <style>
-    .leaderboard-wrapper {
-        display: flex;
-        flex-direction: column;
-        gap: 22px;
-    }
-
-    .leaderboard-stats {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 16px;
-    }
-
-    .leaderboard-card,
-    .leaderboard-panel {
-        background: #fff;
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 22px;
-    }
-
-    .leaderboard-icon {
-        width: 45px;
-        height: 45px;
-        border-radius: 12px;
-        background: #e9f7f1;
-        color: var(--primary);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 19px;
-        margin-bottom: 15px;
-    }
-
-    .leaderboard-card h3 {
-        font-size: 25px;
-        margin: 0 0 5px;
-        color: var(--text);
-    }
-
-    .leaderboard-card p {
-        font-size: 13px;
-        color: var(--muted);
-        margin: 0;
-    }
-
-    .leaderboard-panel-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 15px;
-        margin-bottom: 20px;
-        flex-wrap: wrap;
-    }
-
-    .leaderboard-panel-header h3 {
-        font-size: 18px;
-        color: var(--text);
-        margin: 0 0 5px;
-    }
-
-    .leaderboard-panel-header p {
-        font-size: 13px;
-        color: var(--muted);
-        margin: 0;
-    }
-
-    .leaderboard-filter {
-        padding: 10px 13px;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        background: #fff;
-        color: var(--text);
-        font-size: 13px;
-        outline: none;
-    }
-
-    .leaderboard-table-wrapper {
-        width: 100%;
-        overflow-x: auto;
-    }
-
-    .leaderboard-table {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 650px;
-    }
-
-    .leaderboard-table th {
-        background: #f8fafc;
-        padding: 14px;
-        text-align: left;
-        font-size: 12px;
-        color: var(--muted);
-        font-weight: 600;
-        border-bottom: 1px solid var(--border);
-    }
-
-    .leaderboard-table td {
-        padding: 15px 14px;
-        font-size: 13px;
-        color: var(--text);
-        border-bottom: 1px solid var(--border);
-    }
-
-    .leaderboard-empty {
-        text-align: center;
-        padding: 45px 20px;
-    }
-
-    .leaderboard-empty-icon {
-        width: 65px;
-        height: 65px;
-        margin: 0 auto 15px;
-        border-radius: 50%;
-        background: #f1f5f9;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #94a3b8;
-        font-size: 26px;
-    }
-
-    .leaderboard-empty h4 {
-        font-size: 17px;
-        color: var(--text);
-        margin-bottom: 8px;
-    }
-
-    .leaderboard-empty p {
-        max-width: 460px;
-        margin: 0 auto;
-        color: var(--muted);
-        font-size: 13px;
-        line-height: 1.7;
-    }
-
-    .leaderboard-notice {
-        padding: 16px 18px;
-        border-radius: 12px;
-        background: #eff6ff;
-        border: 1px solid #dbeafe;
-        color: #1e40af;
-        font-size: 13px;
-        line-height: 1.7;
-    }
-
-    @media(max-width: 800px) {
-        .leaderboard-stats {
-            grid-template-columns: 1fr 1fr;
-        }
-    }
-
-    @media(max-width: 550px) {
-        .leaderboard-stats {
-            grid-template-columns: 1fr;
-        }
-
-        .leaderboard-card,
-        .leaderboard-panel {
-            padding: 17px;
-        }
-    }
+    .medal { font-size:18px; }
+    tr.me td { background:#e8f5ef; }
+    .prize-grid { display:flex; flex-wrap:wrap; gap:10px; }
+    .prize { background:#f8fafb; border:1px solid var(--border); border-radius:8px; padding:10px 14px; font-size:12px; color:var(--muted); }
+    .prize strong { display:block; font-size:14px; color:var(--text); margin-top:3px; }
 </style>
 
-<div class="leaderboard-wrapper">
+<div class="inv-page">
 
-    {{-- Summary --}}
-    <div class="leaderboard-stats">
-
-        <div class="leaderboard-card">
-            <div class="leaderboard-icon">
-                <i class="fa-solid fa-users"></i>
-            </div>
-
-            <h3>{{ $summary['total_participants'] }}</h3>
-            <p>Total Participants</p>
+    <div class="inv-heading">
+        <div>
+            <h2>Leaderboard</h2>
+            <p>Top members ranked by <strong>{{ $basisLabel }}</strong>.</p>
         </div>
-
-        <div class="leaderboard-card">
-            <div class="leaderboard-icon">
-                <i class="fa-solid fa-ranking-star"></i>
-            </div>
-
-            <h3>{{ $summary['your_rank'] ?? 'N/A' }}</h3>
-            <p>Your Current Rank</p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <span class="inv-badge"><i class="fas fa-sync"></i> Resets: {{ $cycleLabel }}</span>
+            @if($from)
+                <span class="inv-badge" style="background:#f1f5f9; color:#475569;">{{ $from->format('d M') }} – {{ $to->format('d M Y') }}</span>
+            @endif
         </div>
-
-        <div class="leaderboard-card">
-            <div class="leaderboard-icon">
-                <i class="fa-solid fa-trophy"></i>
-            </div>
-
-            <h3>{{ $summary['top_rank'] ?? 'N/A' }}</h3>
-            <p>Top Rank</p>
-        </div>
-
     </div>
 
-    {{-- Leaderboard Table --}}
-    <div class="leaderboard-panel">
+    @if(! $enabled)
 
-        <div class="leaderboard-panel-header">
-
-            <div>
-                <h3>Top Participants</h3>
-                <p>Platform participation and achievement rankings.</p>
+        <div class="inv-panel">
+            <div class="inv-empty">
+                <div class="icon"><i class="fas fa-lock"></i></div>
+                <h4>Leaderboard Unavailable</h4>
+                <p>This leaderboard is turned off right now. Please check back later.</p>
             </div>
-
-            <select class="leaderboard-filter" disabled>
-                @foreach($periods as $key => $label)
-                    <option value="{{ $key }}"
-                        {{ $period === $key ? 'selected' : '' }}>
-                        {{ $label }}
-                    </option>
-                @endforeach
-            </select>
-
         </div>
 
-        <div class="leaderboard-table-wrapper">
+    @else
 
-            <table class="leaderboard-table">
+        <div class="inv-summary" style="grid-template-columns:repeat(3, 1fr);">
+            <div class="inv-stat">
+                <div class="icon"><i class="fas fa-users"></i></div>
+                <div class="label">Participants</div>
+                <h3>{{ number_format($summary['total_participants']) }}</h3>
+                <small>In this cycle</small>
+            </div>
+            <div class="inv-stat">
+                <div class="icon"><i class="fas fa-crown"></i></div>
+                <div class="label">Your Rank</div>
+                <h3>{{ $summary['your_rank'] ? '#' . $summary['your_rank'] : '—' }}</h3>
+                <small>{{ $summary['your_rank'] ? 'Keep going!' : 'Not in the top 100 yet' }}</small>
+            </div>
+            <div class="inv-stat">
+                <div class="icon"><i class="fas fa-trophy"></i></div>
+                <div class="label">Top {{ $basisLabel }}</div>
+                <h3>
+                    @if($summary['top_value'] === null) —
+                    @elseif(! $showAmounts) Hidden
+                    @elseif($isMoney) {{ number_format($summary['top_value'], 2) }}
+                    @else {{ number_format($summary['top_value']) }}
+                    @endif
+                </h3>
+                <small>{{ $isMoney ? 'BDT' : 'Referrals' }}</small>
+            </div>
+        </div>
 
-                <thead>
-                    <tr>
-                        <th>Rank</th>
-                        <th>Participant</th>
-                        <th>Achievement Points</th>
-                        <th>Completed Achievements</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
+        @if(!empty($prizes) && is_array($prizes))
+            <div class="inv-panel">
+                <div class="inv-panel-header"><h4>Prizes</h4><p>Rewards for the top ranks.</p></div>
+                <div class="inv-panel-body">
+                    <div class="prize-grid">
+                        @foreach($prizes as $rank => $prize)
+                            @if(is_scalar($prize))
+                                <div class="prize">Rank {{ is_numeric($rank) ? $rank + (isset($prizes[0]) ? 1 : 0) : $rank }}<strong>{{ $prize }}</strong></div>
+                            @endif
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        @endif
 
-                <tbody>
+        <div class="inv-panel">
+            <div class="inv-panel-header">
+                <h4>Top {{ $limit }}</h4>
+                <p>Names are partially hidden for privacy.</p>
+            </div>
 
-                    @forelse($leaderboard as $participant)
-
+            <div class="inv-table-wrap">
+                <table class="inv-table" style="min-width:600px;">
+                    <thead>
                         <tr>
-                            <td>{{ $participant->rank }}</td>
-                            <td>{{ $participant->name }}</td>
-                            <td>{{ $participant->points }}</td>
-                            <td>{{ $participant->completed_achievements }}</td>
-                            <td>{{ $participant->status }}</td>
+                            <th>Rank</th>
+                            <th>Member</th>
+                            @if($isMoney && $basisLabel !== 'Investment Amount')<th>Trades</th>@endif
+                            <th>{{ $basisLabel }}</th>
                         </tr>
-
-                    @empty
-
-                        <tr>
-                            <td colspan="5">
-
-                                <div class="leaderboard-empty">
-
-                                    <div class="leaderboard-empty-icon">
-                                        <i class="fa-solid fa-trophy"></i>
+                    </thead>
+                    <tbody>
+                        @forelse($leaderboard as $row)
+                            <tr class="{{ $row->is_me ? 'me' : '' }}">
+                                <td>
+                                    @if($row->rank === 1)<span class="medal">🥇</span>
+                                    @elseif($row->rank === 2)<span class="medal">🥈</span>
+                                    @elseif($row->rank === 3)<span class="medal">🥉</span>
+                                    @else #{{ $row->rank }}
+                                    @endif
+                                </td>
+                                <td><strong>{{ $row->name }}</strong></td>
+                                @if($isMoney && $basisLabel !== 'Investment Amount')<td>{{ number_format($row->trades) }}</td>@endif
+                                <td>
+                                    @if($showAmounts || $row->is_me)
+                                        @if($isMoney)
+                                            <strong>{{ number_format($row->value, 2) }} BDT</strong>
+                                            @if($currency !== 'BDT' && $row->value_local !== null)
+                                                <small>≈ {{ number_format((float) $row->value_local, 2) }} {{ $currency }}</small>
+                                            @endif
+                                        @else
+                                            <strong>{{ number_format($row->value) }}</strong>
+                                        @endif
+                                    @else
+                                        <span style="color:var(--muted);">Hidden</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4">
+                                    <div class="inv-empty">
+                                        <div class="icon"><i class="fas fa-trophy"></i></div>
+                                        <h4>No Rankings Yet</h4>
+                                        <p>Be the first to appear on the leaderboard.</p>
                                     </div>
-
-                                    <h4>Leaderboard Not Available</h4>
-
-                                    <p>
-                                        No ranking data is available yet.
-                                        The platform's ranking criteria and
-                                        achievement point system have not
-                                        been configured.
-                                    </p>
-
-                                </div>
-
-                            </td>
-                        </tr>
-
-                    @endforelse
-
-                </tbody>
-
-            </table>
-
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-    </div>
-
-    {{-- Information --}}
-    <div class="leaderboard-notice">
-        <i class="fa-solid fa-circle-info"></i>
-
-        <strong> Important Notice:</strong>
-
-        Leaderboard rankings will be displayed after the platform
-        defines its participation criteria, achievement points,
-        ranking period and verification process. No financial
-        ranking or investment-based competition is activated.
-    </div>
+    @endif
 
 </div>
 

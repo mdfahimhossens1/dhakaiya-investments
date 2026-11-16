@@ -4,139 +4,86 @@
 
 @section('content')
 
-<style>
-    .ls-page { display:grid; gap:22px; }
+<div class="mp-page">
 
-    .ls-hero {
-        background:linear-gradient(135deg,#102b26,#087f5b);
-        padding:28px;
-        color:#fff;
-        border-radius:14px;
-    }
+    @include('user.my-position._styles')
 
-    .ls-hero h2 { margin:0 0 8px; font-size:24px; }
-    .ls-hero p { margin:0; color:#d5e9e1; font-size:14px; }
-
-    .ls-summary {
-        display:grid;
-        grid-template-columns:repeat(3,1fr);
-        gap:15px;
-    }
-
-    .ls-card {
-        background:#fff;
-        border:1px solid #e8edf0;
-        border-radius:13px;
-        padding:22px;
-    }
-
-    .ls-card h3 { margin:0 0 6px; font-size:24px; color:#1e293b; }
-    .ls-card p { margin:0; color:#84919f; font-size:13px; }
-
-    .ls-section h3 { margin:0 0 18px; font-size:18px; color:#1e293b; }
-
-    .ls-empty {
-        text-align:center;
-        padding:40px 15px;
-        background:#fafbfc;
-        border:1px dashed #dce4e8;
-        border-radius:10px;
-    }
-
-    .ls-empty i { font-size:35px; color:#b8c3cc; margin-bottom:13px; }
-    .ls-empty h4 { margin:0 0 7px; color:#334155; }
-    .ls-empty p { margin:0; color:#84919f; font-size:13px; }
-
-    .ls-notice {
-        background:#eff6ff;
-        color:#1e40af;
-        border:1px solid #dbeafe;
-        padding:15px;
-        border-radius:10px;
-        font-size:13px;
-    }
-
-    @media(max-width:600px) {
-        .ls-summary { grid-template-columns:1fr 1fr; }
-        .ls-card { padding:16px; }
-    }
-</style>
-
-<div class="ls-page">
-
-    <div class="ls-hero">
-        <h2><i class="fa-solid fa-lock"></i> Locked Shares</h2>
-        <p>View your recorded locked share information and status.</p>
+    <div class="mp-hero">
+        <i class="fa-solid fa-lock"></i>
+        <h2>Locked Shares</h2>
+        <p>Shares you locked to hold your position. Locked shares cannot be resold until you unlock them.</p>
     </div>
 
-    <div class="ls-summary">
-
-        <div class="ls-card">
-            <h3>{{ $summary['total_locked_shares'] }}</h3>
-            <p>Total Locked Shares</p>
-        </div>
-
-        <div class="ls-card">
-            <h3>{{ $summary['total_records'] }}</h3>
-            <p>Total Records</p>
-        </div>
-
-        <div class="ls-card">
-            <h3>{{ $summary['active_records'] }}</h3>
-            <p>Active Records</p>
-        </div>
-
+    <div class="mp-grid">
+        <div class="mp-card"><h3>{{ number_format($summary['total_locked_shares']) }}</h3><p>Currently Locked Shares</p></div>
+        <div class="mp-card"><h3>{{ $summary['total_records'] }}</h3><p>Total Lock Records</p></div>
+        <div class="mp-card"><h3>{{ $summary['active_records'] }}</h3><p>Active Records</p></div>
     </div>
 
-    <div class="ls-card ls-section">
+    @if($position && $position->rank)
+        <div class="mp-warn">
+            ⚠ Your position <strong>{{ $position->rank->name }}</strong> depends on these locked shares.
+            Unlocking can lower your position and restarts the {{ $position->rank->lock_period_days }}-day bonus timer.
+        </div>
+    @endif
 
+    @if($lockedHoldings->isNotEmpty())
+    <div class="mp-section">
+        <h3>Unlock Shares</h3>
+        <p class="sub">Unlock before you want to resell.</p>
+        <div class="mp-table-wrap">
+            <table class="mp-table" style="min-width:520px">
+                <thead><tr><th>Project</th><th>Locked</th><th>Unlock</th></tr></thead>
+                <tbody>
+                @foreach($lockedHoldings as $h)
+                    <tr>
+                        <td>{{ $h->project->name ?? 'Removed' }}</td>
+                        <td>{{ number_format($h->locked_shares) }}</td>
+                        <td>
+                            <form method="POST" action="{{ route('user.my-position.unlock') }}" class="mp-form"
+                                  onsubmit="return confirm('Unlocking may lower your position. Continue?')">
+                                @csrf
+                                <input type="hidden" name="project_id" value="{{ $h->project_id }}">
+                                <input type="number" name="shares" min="1" max="{{ $h->locked_shares }}" value="{{ $h->locked_shares }}">
+                                <button class="mp-btn red">Unlock</button>
+                            </form>
+                        </td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @endif
+
+    <div class="mp-section">
         <h3>Locked Share Records</h3>
+        <p class="sub">Every lock and release.</p>
 
         @if($lockedShareRecords->isEmpty())
-
-            <div class="ls-empty">
-                <i class="fa-solid fa-lock"></i>
-                <h4>No Locked Share Records</h4>
-                <p>Any verified locked share records will appear here.</p>
-            </div>
-
+            <div class="mp-empty"><i class="fa-solid fa-lock"></i><h4>No Locked Share Records</h4>
+                <p>Lock shares from <a href="{{ route('user.my-position.index') }}">Current Position</a> to start.</p></div>
         @else
-
-            <div style="overflow-x:auto;">
-                <table style="width:100%;border-collapse:collapse;min-width:650px;">
-                    <thead>
-                        <tr style="background:#f8faf9;text-align:left;">
-                            <th style="padding:13px;">#</th>
-                            <th style="padding:13px;">Project</th>
-                            <th style="padding:13px;">Quantity</th>
-                            <th style="padding:13px;">Lock Date</th>
-                            <th style="padding:13px;">Unlock Date</th>
-                            <th style="padding:13px;">Status</th>
-                        </tr>
-                    </thead>
-
+            <div class="mp-table-wrap">
+                <table class="mp-table">
+                    <thead><tr><th>#</th><th>Project</th><th>Quantity</th><th>Value (BDT)</th><th>Lock Date</th><th>Released</th><th>Status</th></tr></thead>
                     <tbody>
-                        @foreach($lockedShareRecords as $record)
-                            <tr>
-                                <td style="padding:13px;">{{ $loop->iteration }}</td>
-                                <td style="padding:13px;">{{ $record->project_name }}</td>
-                                <td style="padding:13px;">{{ $record->quantity }}</td>
-                                <td style="padding:13px;">{{ $record->lock_date }}</td>
-                                <td style="padding:13px;">{{ $record->unlock_date }}</td>
-                                <td style="padding:13px;">{{ $record->status }}</td>
-                            </tr>
-                        @endforeach
+                    @foreach($lockedShareRecords as $r)
+                        <tr>
+                            <td>{{ $lockedShareRecords->firstItem() + $loop->index }}</td>
+                            <td>{{ $r->project->name ?? 'Removed' }}</td>
+                            <td>{{ number_format($r->shares) }}</td>
+                            <td>৳ {{ number_format((float) bcmul((string) ($r->project->share_price ?? 0), (string) $r->shares, 2), 2) }}</td>
+                            <td>{{ $r->locked_at->format('d M Y') }}<small>{{ $r->locked_at->format('h:i A') }}</small></td>
+                            <td>{{ $r->released_at?->format('d M Y') ?? '—' }}</td>
+                            <td><span class="mp-chip {{ $r->status }}">{{ ucfirst($r->status) }}</span></td>
+                        </tr>
+                    @endforeach
                     </tbody>
                 </table>
             </div>
-
+            @if($lockedShareRecords->hasPages())<div class="mp-pg">{{ $lockedShareRecords->links() }}</div>@endif
         @endif
-
-    </div>
-
-    <div class="ls-notice">
-        <i class="fa-solid fa-circle-info"></i>
-        Locked share records are currently not configured. No share locking or unlocking operation is available on this page.
     </div>
 
 </div>

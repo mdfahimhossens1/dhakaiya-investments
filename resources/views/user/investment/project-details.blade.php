@@ -4,299 +4,238 @@
 
 @section('content')
 
+@include('partials.styles')
+
 <style>
-    .project-details-page {
-        padding: 5px 0 25px;
-    }
+    .pd-grid { display:grid; grid-template-columns: 1fr 360px; gap:20px; align-items:start; }
+    .pd-banner { min-height:190px; background:linear-gradient(135deg,#102b26,#087f5b); color:#fff; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:30px 20px; position:relative; }
+    .pd-banner.has-image { padding:0; min-height:0; height:230px; }
+    .pd-banner img { width:100%; height:100%; object-fit:cover; display:block; }
+    .pd-banner i { font-size:42px; margin-bottom:14px; opacity:.9; }
+    .pd-banner h3 { font-size:21px; font-weight:700; margin:0 0 6px; }
+    .pd-banner p { font-size:12px; margin:0; opacity:.8; }
+    .pd-content { padding:25px; }
+    .pd-content h4 { color:var(--text); font-size:16px; font-weight:700; margin:20px 0 10px; }
+    .pd-content p.desc { color:var(--muted); font-size:13px; line-height:1.8; white-space:pre-line; margin:0; }
+    .pd-info { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-top:20px; }
+    .pd-info-item { border:1px solid var(--border); border-radius:9px; padding:14px; background:#fafcfc; }
+    .pd-info-item span { display:block; color:var(--muted); font-size:11px; margin-bottom:7px; }
+    .pd-info-item strong { color:var(--text); font-size:13px; font-weight:600; }
+    .pd-progress { height:8px; background:#e2e8f0; border-radius:20px; overflow:hidden; margin-top:8px; }
+    .pd-progress div { height:100%; background:var(--primary); }
 
-    .project-details-heading {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 15px;
-        margin-bottom: 25px;
-    }
+    .buy-total { background:#f8fafb; border:1px solid var(--border); border-radius:8px; padding:12px 14px; font-size:12px; color:var(--muted); margin-bottom:16px; }
+    .buy-total strong { display:block; font-size:18px; color:var(--text); margin-top:4px; }
+    .buy-warn { color:#dc2626; font-size:11px; margin-top:6px; display:none; }
+    .holding-box { margin-top:16px; padding:14px; background:#e8f5ef; border-radius:9px; font-size:12px; color:var(--text); line-height:1.8; }
 
-    .project-details-heading h2 {
-        font-size: 23px;
-        font-weight: 700;
-        color: var(--text);
-        margin: 0 0 5px;
-    }
-
-    .project-details-heading p {
-        color: var(--muted);
-        font-size: 13px;
-        margin: 0;
-    }
-
-    .back-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 16px;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        color: var(--text);
-        text-decoration: none;
-        font-size: 12px;
-        font-weight: 600;
-        background: var(--white);
-    }
-
-    .back-btn:hover {
-        color: var(--primary);
-        border-color: var(--primary);
-    }
-
-    .project-main-card {
-        background: var(--white);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        overflow: hidden;
-        margin-bottom: 20px;
-    }
-
-    .project-banner {
-        min-height: 190px;
-        background: linear-gradient(135deg, #102b26, #087f5b);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        flex-direction: column;
-        color: white;
-        text-align: center;
-        padding: 30px 20px;
-    }
-
-    .project-banner i {
-        font-size: 42px;
-        margin-bottom: 15px;
-        opacity: .9;
-    }
-
-    .project-banner h3 {
-        font-size: 21px;
-        font-weight: 700;
-        margin: 0 0 8px;
-    }
-
-    .project-banner p {
-        font-size: 12px;
-        margin: 0;
-        opacity: .8;
-    }
-
-    .project-content {
-        padding: 25px;
-    }
-
-    .project-content h4 {
-        color: var(--text);
-        font-size: 16px;
-        font-weight: 700;
-        margin: 0 0 12px;
-    }
-
-    .project-content p {
-        color: var(--muted);
-        font-size: 13px;
-        line-height: 1.8;
-        margin-bottom: 20px;
-    }
-
-    .project-information-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
-        margin-top: 20px;
-    }
-
-    .information-item {
-        border: 1px solid var(--border);
-        border-radius: 9px;
-        padding: 16px;
-        background: #fafcfc;
-    }
-
-    .information-item span {
-        display: block;
-        color: var(--muted);
-        font-size: 11px;
-        margin-bottom: 8px;
-    }
-
-    .information-item strong {
-        color: var(--text);
-        font-size: 13px;
-        font-weight: 600;
-    }
-
-    .project-status {
-        display: inline-block;
-        background: #fff7e6;
-        color: #b7791f;
-        padding: 7px 12px;
-        border-radius: 7px;
-        font-size: 11px;
-        font-weight: 600;
-    }
-
-    .project-empty {
-        background: var(--white);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 65px 20px;
-        text-align: center;
-    }
-
-    .empty-icon {
-        width: 75px;
-        height: 75px;
-        border-radius: 50%;
-        background: #e8f5ef;
-        color: var(--primary);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 30px;
-        margin: 0 auto 20px;
-    }
-
-    .project-empty h3 {
-        font-size: 18px;
-        font-weight: 700;
-        color: var(--text);
-        margin-bottom: 10px;
-    }
-
-    .project-empty p {
-        color: var(--muted);
-        font-size: 12px;
-        line-height: 1.8;
-        max-width: 430px;
-        margin: 0 auto 22px;
-    }
-
-    .browse-btn {
-        display: inline-block;
-        background: var(--primary);
-        color: white;
-        text-decoration: none;
-        padding: 11px 20px;
-        border-radius: 8px;
-        font-size: 12px;
-        font-weight: 600;
-    }
-
-    .browse-btn:hover {
-        background: var(--primary-dark);
-        color: white;
-    }
-
-    .project-notice {
-        padding: 17px 20px;
-        border: 1px solid #dcecff;
-        background: #f0f7ff;
-        border-radius: 10px;
-        display: flex;
-        gap: 12px;
-        align-items: flex-start;
-    }
-
-    .project-notice i {
-        color: #2563eb;
-        font-size: 18px;
-        margin-top: 2px;
-    }
-
-    .project-notice h5 {
-        color: #1e40af;
-        font-size: 13px;
-        font-weight: 700;
-        margin: 0 0 5px;
-    }
-
-    .project-notice p {
-        color: #475569;
-        font-size: 12px;
-        line-height: 1.7;
-        margin: 0;
-    }
-
-    @media(max-width: 576px) {
-        .project-information-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .project-content {
-            padding: 18px;
-        }
-
-        .back-btn {
-            width: 100%;
-            justify-content: center;
-        }
-    }
+    @media(max-width:900px) { .pd-grid { grid-template-columns:1fr; } }
+    @media(max-width:576px) { .pd-info { grid-template-columns:1fr; } .pd-content { padding:18px; } }
 </style>
 
-<div class="project-details-page">
+<div class="inv-page">
 
     {{-- Heading --}}
-    <div class="project-details-heading">
-
+    <div class="inv-heading">
         <div>
             <h2>Project Details</h2>
             <p>View detailed information about a project.</p>
         </div>
 
-        <a href="{{ route('user.available-projects.index') }}"
-           class="back-btn">
+        <a href="{{ route('user.available-projects.index') }}" class="inv-btn outline">
             <i class="fas fa-arrow-left"></i>
             Available Projects
         </a>
-
     </div>
+
+    @if(session('success'))
+        <div class="inv-alert success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
+    @endif
+
+    @if(session('error'))
+        <div class="inv-alert error"><i class="fas fa-exclamation-circle"></i> {{ session('error') }}</div>
+    @endif
+
+    @if($errors->any())
+        <div class="inv-alert error">
+            <strong>Please check the following errors:</strong>
+            <ul>
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
 
     @if($project)
 
-        {{-- Future Project Details --}}
-        <div class="project-main-card">
+        @php
+            $available = (int) $project->available_shares;
+            $total = max(1, (int) $project->total_shares);
+            $availablePercent = min(100, round(($available / $total) * 100));
+            $categoryName = $project->projectCategory->name ?? ucwords(str_replace('_', ' ', $project->category));
+        @endphp
 
-            <div class="project-banner">
-                <i class="fas fa-building"></i>
-                <h3>{{ $project->name }}</h3>
-                <p>Project Information</p>
+        <div class="pd-grid">
+
+            {{-- LEFT: project info --}}
+            <div>
+                <div class="inv-panel">
+
+                    <div class="pd-banner {{ $project->image ? 'has-image' : '' }}">
+                        @if($project->image)
+                            <img src="{{ Storage::disk('public')->url($project->image) }}" alt="{{ $project->name }}">
+                        @else
+                            <i class="fas fa-building"></i>
+                            <h3>{{ $project->name }}</h3>
+                            <p>{{ $project->company->name ?? 'Project Information' }}</p>
+                        @endif
+                    </div>
+
+                    <div class="pd-content">
+
+                        <span class="st-badge {{ $project->status }}">{{ ucfirst($project->status) }}</span>
+
+                        <h3 style="margin:14px 0 4px; color:var(--text); font-size:20px;">{{ $project->name }}</h3>
+                        <div style="color:var(--muted); font-size:12px;">{{ $project->company->name ?? 'N/A' }}</div>
+
+                        <h4>About This Project</h4>
+                        <p class="desc">{{ $project->description ?: 'No description available.' }}</p>
+
+                        <div class="pd-info">
+
+                            <div class="pd-info-item">
+                                <span>Category</span>
+                                <strong>{{ $categoryName }}</strong>
+                            </div>
+
+                            <div class="pd-info-item">
+                                <span>Share Price (BDT)</span>
+                                <strong>{{ number_format((float) $project->share_price, 2) }}</strong>
+                            </div>
+
+                            <div class="pd-info-item">
+                                <span>Daily Profit</span>
+                                <strong>{{ rtrim(rtrim(number_format((float) $project->daily_profit_percent, 2), '0'), '.') }}%</strong>
+                            </div>
+
+                            <div class="pd-info-item">
+                                <span>Minimum Buy</span>
+                                <strong>{{ number_format($project->min_buy_shares) }} share(s)</strong>
+                            </div>
+
+                            <div class="pd-info-item">
+                                <span>Start Date</span>
+                                <strong>{{ $project->start_date?->format('d M Y') ?? 'Not specified' }}</strong>
+                            </div>
+
+                            <div class="pd-info-item">
+                                <span>End Date</span>
+                                <strong>{{ $project->end_date?->format('d M Y') ?? 'Not specified' }}</strong>
+                            </div>
+
+                            <div class="pd-info-item" style="grid-column:1/-1;">
+                                <span>Availability</span>
+                                <strong>{{ number_format($available) }} / {{ number_format($project->total_shares) }} shares available</strong>
+                                <div class="pd-progress"><div style="width: {{ $availablePercent }}%"></div></div>
+                            </div>
+
+                        </div>
+
+                    </div>
+                </div>
             </div>
 
-            <div class="project-content">
 
-                <span class="project-status">
-                    {{ ucfirst($project->status) }}
-                </span>
+            {{-- RIGHT: buy box --}}
+            <div>
+                <div class="inv-panel">
 
-                <h4 style="margin-top: 20px;">About This Project</h4>
-
-                <p>
-                    {{ $project->description }}
-                </p>
-
-                <div class="project-information-grid">
-
-                    <div class="information-item">
-                        <span>Project Category</span>
-                        <strong>{{ $project->category }}</strong>
+                    <div class="inv-panel-header">
+                        <h4>Buy Shares</h4>
+                        <p>Pay from one of your wallets.</p>
                     </div>
 
-                    <div class="information-item">
-                        <span>Project Status</span>
-                        <strong>{{ ucfirst($project->status) }}</strong>
-                    </div>
+                    <div class="inv-panel-body">
 
+                        @if(!$canBuy)
+
+                            <div class="inv-alert error" style="margin:0;">
+                                This project is not open for purchase right now.
+                            </div>
+
+                        @elseif(count($walletOptions) === 0)
+
+                            <div class="inv-alert error" style="margin:0;">
+                                You don't have a wallet that can be used for this purchase yet.
+                            </div>
+
+                            <a href="{{ route('user.deposit') }}" class="inv-btn primary" style="width:100%; margin-top:14px;">
+                                <i class="fas fa-wallet"></i> Go to Deposit
+                            </a>
+
+                        @else
+
+                            <form method="POST"
+                                  action="{{ route('user.project-details.buy', $project->slug) }}"
+                                  onsubmit="return confirm('Confirm this purchase?')">
+                                @csrf
+
+                                <div class="inv-field">
+                                    <label>Pay With (Wallet)</label>
+                                    <select name="currency" id="buyCurrency" required>
+                                        @foreach($walletOptions as $w)
+                                            <option value="{{ $w['currency'] }}"
+                                                    data-unit="{{ $w['unit_price'] }}"
+                                                    data-balance="{{ $w['balance'] }}"
+                                                    {{ old('currency') === $w['currency'] ? 'selected' : '' }}>
+                                                {{ $w['currency'] }} — Balance: {{ number_format((float) $w['balance'], 2) }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="inv-field">
+                                    <label>Number of Shares</label>
+                                    <input type="number" name="shares" id="buyShares"
+                                           min="{{ $project->min_buy_shares }}"
+                                           max="{{ $available }}"
+                                           value="{{ old('shares', $project->min_buy_shares) }}" required>
+                                    <small class="inv-help">
+                                        Min {{ number_format($project->min_buy_shares) }} · Max {{ number_format($available) }}
+                                    </small>
+                                </div>
+
+                                <div class="buy-total">
+                                    Unit price: <span id="buyUnit">—</span>
+                                    <strong id="buyTotal">—</strong>
+                                    <div class="buy-warn" id="buyWarn">Insufficient wallet balance.</div>
+                                </div>
+
+                                <button type="submit" class="inv-btn primary" id="buyBtn" style="width:100%;">
+                                    <i class="fas fa-shopping-cart"></i> Buy Now
+                                </button>
+                            </form>
+
+                        @endif
+
+
+                        @if($holding && $holding->shares > 0)
+                            <div class="holding-box">
+                                <strong>Your holding in this project</strong><br>
+                                Shares: {{ number_format($holding->shares) }}
+                                @if($holding->locked_shares > 0)
+                                    ({{ number_format($holding->locked_shares) }} locked)
+                                @endif
+                                <br>
+                                Invested: {{ number_format((float) $holding->invested_bdt, 2) }} BDT<br>
+                                <a href="{{ route('user.my-shares.index') }}" style="color:var(--primary); font-weight:600;">View in My Shares →</a>
+                            </div>
+                        @endif
+
+                    </div>
                 </div>
-
             </div>
 
         </div>
@@ -304,55 +243,81 @@
     @else
 
         {{-- Empty State --}}
-        <div class="project-empty">
+        <div class="inv-panel">
+            <div class="inv-empty">
 
-            <div class="empty-icon">
-                <i class="fas fa-folder-open"></i>
+                <div class="icon"><i class="fas fa-folder-open"></i></div>
+
+                <h4>Project Details Not Available</h4>
+
+                <p>
+                    @if(isset($slug))
+                        The requested project was not found or is not published.
+                    @else
+                        Select a published project from the Available Projects section to view its details.
+                    @endif
+                </p>
+
+                <a href="{{ route('user.available-projects.index') }}" class="inv-btn primary">
+                    <i class="fas fa-search"></i> Browse Available Projects
+                </a>
+
             </div>
-
-            <h3>Project Details Not Available</h3>
-
-            <p>
-                @if(isset($slug))
-                    The requested project has not been published
-                    or its details are not available yet.
-                @else
-                    Select a published project from the Available
-                    Projects section to view its details.
-                @endif
-            </p>
-
-            <a href="{{ route('user.available-projects.index') }}"
-               class="browse-btn">
-                <i class="fas fa-search"></i>
-                Browse Available Projects
-            </a>
-
         </div>
 
     @endif
 
 
     {{-- Notice --}}
-    <div class="project-notice" style="margin-top: 20px;">
-
+    <div class="inv-notice">
         <i class="fas fa-shield-alt"></i>
-
         <div>
             <h5>Important Information</h5>
-
             <p>
-                Project descriptions and other information must be
-                verified before publication. Displaying project
-                information does not guarantee financial returns.
-                Real investment and share-related activities must
-                remain disabled until applicable legal and regulatory
-                approvals are confirmed.
+                Share prices and profit percentages shown here are project listing information
+                and do not guarantee future returns. Please review the details carefully
+                before buying.
             </p>
         </div>
-
     </div>
 
 </div>
+
+
+@if($project && $canBuy && count($walletOptions) > 0)
+<script>
+    (function () {
+        const sel = document.getElementById('buyCurrency');
+        const qty = document.getElementById('buyShares');
+        const unitEl = document.getElementById('buyUnit');
+        const totalEl = document.getElementById('buyTotal');
+        const warn = document.getElementById('buyWarn');
+        const btn = document.getElementById('buyBtn');
+
+        function fmt(n) {
+            return n.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+
+        function calc() {
+            const opt = sel.options[sel.selectedIndex];
+            const unit = parseFloat(opt.dataset.unit) || 0;
+            const balance = parseFloat(opt.dataset.balance) || 0;
+            const q = parseInt(qty.value, 10) || 0;
+            const total = unit * q;
+
+            unitEl.textContent = fmt(unit) + ' ' + sel.value;
+            totalEl.textContent = fmt(total) + ' ' + sel.value;
+
+            const insufficient = total > balance;
+            warn.style.display = insufficient ? 'block' : 'none';
+            btn.disabled = insufficient || q < 1;
+        }
+
+        sel.addEventListener('change', calc);
+        qty.addEventListener('input', calc);
+        calc();
+    })();
+</script>
+@endif
 
 @endsection

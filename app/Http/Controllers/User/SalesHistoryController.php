@@ -25,16 +25,29 @@ class SalesHistoryController extends Controller
             $status = 'all';
         }
 
-        // Real sales data will be connected after business and
-        // regulatory requirements have been verified.
-        $sales = collect([]);
+        $sales = $user->shareOrders()
+            ->where('type', 'sell')
+            ->with(['project.company'])
+            ->when($status !== 'all', fn ($q) => $q->where('status', $status))
+            ->latest()
+            ->paginate(15)
+            ->withQueryString();
+
+        $counts = $user->shareOrders()
+            ->where('type', 'sell')
+            ->selectRaw('status, COUNT(*) as c')
+            ->groupBy('status')
+            ->pluck('c', 'status');
 
         $summary = [
-            'total_records' => 0,
-            'pending' => 0,
-            'approved' => 0,
-            'completed' => 0,
-            'rejected' => 0,
+            'total_records' => $counts->sum(),
+            'pending' => $counts['pending'] ?? 0,
+            'approved' => $counts['approved'] ?? 0,
+            'completed' => $counts['completed'] ?? 0,
+            'rejected' => $counts['rejected'] ?? 0,
+            'total_shares' => $user->shareOrders()->where('type', 'sell')->sum('shares'),
+            'total_received_bdt' => $user->shareOrders()->where('type', 'sell')->sum('net_bdt'),
+            'total_profit_loss_bdt' => $user->shareOrders()->where('type', 'sell')->sum('profit_loss_bdt'),
         ];
 
         return view('user.investment.sales-history', compact(

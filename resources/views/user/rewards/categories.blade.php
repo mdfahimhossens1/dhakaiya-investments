@@ -1,263 +1,108 @@
 @extends('layouts.app')
 
+@section('title', 'Reward Categories')
+
 @section('content')
 
+@include('user.investment._styles')
+
 <style>
-    .reward-category-page {
-        padding: 5px 0 25px;
-    }
-
-    .reward-category-page .page-heading {
-        margin-bottom: 25px;
-    }
-
-    .reward-category-page .page-heading h2 {
-        font-size: 23px;
-        font-weight: 700;
-        color: var(--text);
-        margin: 0 0 6px;
-    }
-
-    .reward-category-page .page-heading p {
-        color: var(--muted);
-        font-size: 13px;
-        margin: 0;
-    }
-
-    .reward-category-page .category-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 18px;
-        margin-bottom: 25px;
-    }
-
-    .reward-category-page .category-card {
-        background: var(--white);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 23px;
-        transition: .2s;
-    }
-
-    .reward-category-page .category-card:hover {
-        border-color: #a7d8c5;
-        transform: translateY(-3px);
-    }
-
-    .reward-category-page .category-icon {
-        width: 52px;
-        height: 52px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 12px;
-        font-size: 21px;
-        margin-bottom: 17px;
-    }
-
-    .reward-category-page .gold {
-        background: #fff4d8;
-        color: #d69e00;
-    }
-
-    .reward-category-page .blue {
-        background: #eaf2ff;
-        color: #2563eb;
-    }
-
-    .reward-category-page .green {
-        background: #e8f8ef;
-        color: #16a34a;
-    }
-
-    .reward-category-page .purple {
-        background: #f3eaff;
-        color: #9333ea;
-    }
-
-    .reward-category-page .orange {
-        background: #fff3e8;
-        color: #ea580c;
-    }
-
-    .reward-category-page .category-card h3 {
-        color: var(--text);
-        font-size: 15px;
-        font-weight: 700;
-        margin: 0 0 9px;
-    }
-
-    .reward-category-page .category-card p {
-        color: var(--muted);
-        font-size: 12px;
-        line-height: 1.8;
-        margin: 0 0 17px;
-    }
-
-    .reward-category-page .category-status {
-        display: inline-block;
-        padding: 7px 11px;
-        border-radius: 20px;
-        background: #f1f5f9;
-        color: #64748b;
-        font-size: 10px;
-        font-weight: 700;
-    }
-
-    .reward-category-page .info-card {
-        background: #fffbeb;
-        border: 1px solid #fde68a;
-        border-radius: 10px;
-        padding: 18px;
-        display: flex;
-        gap: 12px;
-    }
-
-    .reward-category-page .info-card i {
-        color: #d97706;
-        font-size: 18px;
-    }
-
-    .reward-category-page .info-card h4 {
-        color: #92400e;
-        font-size: 13px;
-        margin: 0 0 6px;
-        font-weight: 700;
-    }
-
-    .reward-category-page .info-card p {
-        color: #92400e;
-        font-size: 11px;
-        line-height: 1.8;
-        margin: 0;
-    }
-
-    @media(max-width: 900px) {
-        .reward-category-page .category-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-
-    @media(max-width: 550px) {
-        .reward-category-page .category-grid {
-            grid-template-columns: 1fr;
-        }
-    }
+    .rc-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(290px, 1fr)); gap:18px; }
+    .rc-card { background:var(--white); border:1px solid var(--border); border-radius:13px; padding:22px; display:flex; flex-direction:column; gap:12px; }
+    .rc-card.locked { opacity:.85; }
+    .rc-top { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+    .rc-icon { width:46px; height:46px; border-radius:12px; background:#e8f5ef; color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:20px; }
+    .rc-card h4 { margin:0; font-size:16px; font-weight:700; color:var(--text); }
+    .rc-card p { margin:0; font-size:12px; color:var(--muted); line-height:1.7; }
+    .rc-meta { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .rc-meta div { background:#f8fafb; border:1px solid var(--border); border-radius:8px; padding:10px; font-size:11px; color:var(--muted); }
+    .rc-meta strong { display:block; font-size:14px; color:var(--text); margin-top:4px; }
+    .bar { height:7px; background:#e2e8f0; border-radius:20px; overflow:hidden; }
+    .bar div { height:100%; background:var(--primary); }
 </style>
 
-<div class="reward-category-page">
+@php
+    $typeLabels = ['cash' => 'Cash', 'bonus_share' => 'Bonus Share', 'gift' => 'Gift', 'badge' => 'Badge'];
+    $typeIcons = ['cash' => 'fa-money-bill-wave', 'bonus_share' => 'fa-layer-group', 'gift' => 'fa-gift', 'badge' => 'fa-award'];
+@endphp
 
-    <div class="page-heading">
-        <h2>Reward Categories</h2>
-        <p>Explore the available reward categories and their descriptions.</p>
-    </div>
+<div class="inv-page">
 
-    <div class="category-grid">
-
-        <div class="category-card">
-            <div class="category-icon gold">
-                <i class="fa-solid fa-star"></i>
-            </div>
-
-            <h3>Membership Rewards</h3>
-
-            <p>
-                Recognition associated with eligible membership
-                milestones and platform participation.
-            </p>
-
-            <span class="category-status">Policy Not Configured</span>
-        </div>
-
-        <div class="category-card">
-            <div class="category-icon blue">
-                <i class="fa-solid fa-users"></i>
-            </div>
-
-            <h3>Referral Rewards</h3>
-
-            <p>
-                Referral-related recognition based on an approved
-                and transparent referral policy.
-            </p>
-
-            <span class="category-status">Policy Not Configured</span>
-        </div>
-
-        <div class="category-card">
-            <div class="category-icon green">
-                <i class="fa-solid fa-trophy"></i>
-            </div>
-
-            <h3>Achievement Rewards</h3>
-
-            <p>
-                Recognition for eligible milestones and achievements
-                under officially published rules.
-            </p>
-
-            <span class="category-status">Policy Not Configured</span>
-        </div>
-
-        <div class="category-card">
-            <div class="category-icon purple">
-                <i class="fa-solid fa-ranking-star"></i>
-            </div>
-
-            <h3>Performance Recognition</h3>
-
-            <p>
-                Recognition based on transparent and verifiable
-                platform activity criteria.
-            </p>
-
-            <span class="category-status">Policy Not Configured</span>
-        </div>
-
-        <div class="category-card">
-            <div class="category-icon orange">
-                <i class="fa-solid fa-calendar-check"></i>
-            </div>
-
-            <h3>Participation Rewards</h3>
-
-            <p>
-                Recognition for eligible participation in
-                officially supported platform activities.
-            </p>
-
-            <span class="category-status">Policy Not Configured</span>
-        </div>
-
-        <div class="category-card">
-            <div class="category-icon blue">
-                <i class="fa-solid fa-medal"></i>
-            </div>
-
-            <h3>Special Recognition</h3>
-
-            <p>
-                Special recognition categories that may be
-                introduced through an approved platform policy.
-            </p>
-
-            <span class="category-status">Policy Not Configured</span>
-        </div>
-
-    </div>
-
-    <div class="info-card">
-        <i class="fa-solid fa-shield-halved"></i>
-
+    <div class="inv-heading">
         <div>
-            <h4>Reward Policy Notice</h4>
+            <h2>Reward Categories</h2>
+            <p>The reward programs available on the platform and what it takes to unlock them.</p>
+        </div>
+        <span class="inv-badge"><i class="fas fa-coins"></i> Your investment: {{ number_format($invested, 2) }} BDT</span>
+    </div>
 
+    @if($categories->isEmpty())
+
+        <div class="inv-panel">
+            <div class="inv-empty">
+                <div class="icon"><i class="fas fa-gift"></i></div>
+                <h4>No Reward Categories Yet</h4>
+                <p>Reward categories will appear here once they are published.</p>
+            </div>
+        </div>
+
+    @else
+
+        <div class="rc-grid">
+            @foreach($categories as $c)
+                @php $val = rtrim(rtrim(number_format((float) $c->reward_value, 2), '0'), '.'); @endphp
+
+                <div class="rc-card {{ $c->is_unlocked ? '' : 'locked' }}">
+                    <div class="rc-top">
+                        <div class="rc-icon"><i class="fas {{ $typeIcons[$c->reward_type] ?? 'fa-gift' }}"></i></div>
+                        <span class="st-badge {{ $c->is_unlocked ? 'approved' : 'pending' }}">
+                            {{ $c->is_unlocked ? 'Unlocked' : 'Locked' }}
+                        </span>
+                    </div>
+
+                    <div>
+                        <h4>{{ $c->name }}</h4>
+                        @if($c->description)<p>{{ $c->description }}</p>@endif
+                    </div>
+
+                    <div class="rc-meta">
+                        <div>
+                            Reward
+                            <strong>{{ $c->value_type === 'percent' ? $val . '%' : $val }}</strong>
+                            {{ $typeLabels[$c->reward_type] ?? ucfirst($c->reward_type) }}
+                        </div>
+                        <div>
+                            Min. Investment
+                            <strong>{{ number_format((float) $c->min_investment, 2) }}</strong>
+                            BDT
+                        </div>
+                    </div>
+
+                    @if($c->is_unlocked)
+                        <div style="font-size:12px; color:#15803d; font-weight:600;"><i class="fas fa-check-circle"></i> You meet the requirement</div>
+                    @else
+                        <div>
+                            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-bottom:6px;">
+                                <span>{{ $c->progress }}% complete</span>
+                                <span>{{ number_format($c->remaining, 2) }} BDT more</span>
+                            </div>
+                            <div class="bar"><div style="width: {{ $c->progress }}%"></div></div>
+                        </div>
+                    @endif
+                </div>
+            @endforeach
+        </div>
+
+    @endif
+
+    <div class="inv-notice">
+        <i class="fas fa-info-circle"></i>
+        <div>
+            <h5>About Rewards</h5>
             <p>
-                These categories are informational placeholders.
-                No cash reward, investment return or referral commission
-                is currently enabled. Any future reward program requires
-                approved rules, verified funding sources and applicable
-                legal and regulatory clearance.
+                Progress is based on the total amount you currently have invested in shares.
+                Rewards you have already received are listed in
+                <a href="{{ route('user.reward-history.index') }}" style="color:var(--primary); font-weight:600;">Reward History</a>.
             </p>
         </div>
     </div>

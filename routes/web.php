@@ -33,6 +33,34 @@ use App\Http\Controllers\User\TopPerformersController;
 use App\Http\Controllers\User\ReferralController;
 use App\Http\Controllers\User\MyPositionController;
 use App\Http\Controllers\User\SupportController;
+use App\Http\Controllers\SuperAdmin\CompanyController;
+use App\Http\Controllers\SuperAdmin\UserManagementController;
+use App\Http\Controllers\SuperAdmin\PlanController;
+use App\Http\Controllers\SuperAdmin\PlatformSettingController;
+use App\Http\Controllers\SuperAdmin\ProjectController;
+use App\Http\Controllers\SuperAdmin\ProjectCategoryController;
+use App\Http\Controllers\SuperAdmin\ProjectTemplateController;
+use App\Http\Controllers\SuperAdmin\ProfileReviewController;
+use App\Http\Controllers\SuperAdmin\BannerController;
+use App\Http\Controllers\SuperAdmin\NoticeController;
+use App\Http\Controllers\SuperAdmin\AnnouncementController;
+use App\Http\Controllers\SuperAdmin\FaqController;
+use App\Http\Controllers\SuperAdmin\RewardCategoryController as AdminRewardCategoryController;
+use App\Http\Controllers\SuperAdmin\LeaderboardSettingController;
+use App\Http\Controllers\SuperAdmin\ReferralSettingController;
+use App\Http\Controllers\SuperAdmin\PositionSettingController;
+use App\Http\Controllers\SuperAdmin\PlatformReportController;
+use App\Http\Controllers\SuperAdmin\ActivityLogController;
+use App\Http\Controllers\SuperAdmin\ProductCatalogueReportController;
+use App\Http\Middleware\LogUserActivity;
+use App\Http\Controllers\SuperAdmin\NotificationBroadcastController;
+use App\Http\Controllers\SuperAdmin\SupportTicketController;
+use App\Http\Controllers\SuperAdmin\ContactMessageController;
+use App\Http\Controllers\SuperAdmin\ProfileController as SuperAdminProfileController;
+use App\Http\Controllers\SuperAdmin\DepositRequestController;
+use App\Http\Controllers\SuperAdmin\WithdrawRequestController;
+use App\Http\Controllers\SuperAdmin\InvestmentReportController;
+use App\Http\Controllers\SuperAdmin\PaymentMethodController;
 
 Route::get('/', function () {
 
@@ -78,6 +106,267 @@ Route::middleware('auth')->group(function () {
 
         Route::post('/admins', [AdminController::class, 'store'])
             ->name('admins.store');
+
+        // Company Management
+        Route::get('/companies', [CompanyController::class, 'index'])
+            ->name('companies.index');
+
+        Route::get('/companies/create', [CompanyController::class, 'create'])
+            ->name('companies.create');
+
+        Route::post('/companies', [CompanyController::class, 'store'])
+            ->name('companies.store');
+
+        Route::get('/companies/{company}/edit', [CompanyController::class, 'edit'])
+            ->name('companies.edit');
+
+        Route::put('/companies/{company}', [CompanyController::class, 'update'])
+            ->name('companies.update');
+
+        Route::delete('/companies/{company}', [CompanyController::class, 'destroy'])
+            ->name('companies.destroy');
+
+            // User Management
+Route::get('/users', [UserManagementController::class, 'index'])
+    ->name('users.index');
+    Route::get('/users/{user}', [UserManagementController::class, 'show'])
+    ->name('users.show');
+    Route::get('/users/{user}/edit', [UserManagementController::class, 'edit'])
+    ->name('users.edit');
+
+Route::put('/users/{user}', [UserManagementController::class, 'update'])
+    ->name('users.update');
+
+    Route::patch('/users/{user}/status', [UserManagementController::class, 'updateStatus'])
+    ->name('users.update-status');
+// Platform Plans Management
+Route::resource('plans', PlanController::class);
+
+Route::patch('/plans/{plan}/status', [PlanController::class, 'updateStatus'])
+    ->name('plans.update-status');
+
+// Platform Settings
+Route::get('/platform-settings', [PlatformSettingController::class, 'index'])
+    ->name('platform-settings.index');
+
+Route::put('/platform-settings', [PlatformSettingController::class, 'update'])
+    ->name('platform-settings.update');
+
+Route::get('/projects', [ProjectController::class, 'index'])
+    ->name('projects.index');
+
+Route::post('/projects', [ProjectController::class, 'store'])
+    ->name('projects.store');
+
+Route::put('/projects/{project}', [ProjectController::class, 'update'])
+    ->name('projects.update');
+
+Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])
+    ->name('projects.destroy');
+
+
+// Project Categories
+Route::get('/project-categories', [ProjectCategoryController::class, 'index'])
+    ->name('project-categories.index');
+
+Route::post('/project-categories', [ProjectCategoryController::class, 'store'])
+    ->name('project-categories.store');
+
+Route::put('/project-categories/{projectCategory}', [ProjectCategoryController::class, 'update'])
+    ->name('project-categories.update');
+
+Route::delete('/project-categories/{projectCategory}', [ProjectCategoryController::class, 'destroy'])
+    ->name('project-categories.destroy');
+
+// Product Templates Management
+Route::get('/project-templates', [ProjectTemplateController::class, 'index'])
+    ->name('project-templates.index');
+
+Route::post('/project-templates', [ProjectTemplateController::class, 'store'])
+    ->name('project-templates.store');
+
+Route::put('/project-templates/{projectTemplate}', [ProjectTemplateController::class, 'update'])
+    ->name('project-templates.update');
+
+Route::delete('/project-templates/{projectTemplate}', [ProjectTemplateController::class, 'destroy'])
+    ->name('project-templates.destroy');
+
+// Profile Review Management
+Route::prefix('profile-reviews')
+    ->name('profile-reviews.')
+    ->controller(ProfileReviewController::class)
+    ->group(function () {
+
+        Route::get('/', 'index')
+            ->name('index');
+
+        Route::get('/{user}', 'show')
+            ->name('show');
+
+        Route::put('/{user}', 'update')
+            ->name('update');
+});
+
+
+// Banner Management
+Route::prefix('banners')
+    ->name('banners.')
+    ->controller(BannerController::class)
+    ->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::get('/{banner}', 'show')->name('show');
+        Route::put('/{banner}', 'update')->name('update');
+        Route::delete('/{banner}', 'destroy')->name('destroy');
+    });
+
+
+    // Notice Board
+Route::prefix('notices')
+    ->name('notices.')
+    ->controller(NoticeController::class)
+    ->group(function () {
+
+        Route::get('/', 'index')->name('index');
+
+        Route::post('/', 'store')->name('store');
+
+        Route::get('/{notice}', 'show')->name('show');
+
+        Route::put('/{notice}', 'update')->name('update');
+
+        Route::delete('/{notice}', 'destroy')->name('destroy');
+
+    });
+
+// Announcement Management
+Route::prefix('announcements')
+    ->name('announcements.')
+    ->controller(AnnouncementController::class)
+    ->group(function () {
+
+        Route::get('/', 'index')->name('index');
+
+        Route::post('/', 'store')->name('store');
+
+        Route::get('/{announcement}', 'show')->name('show');
+
+        Route::put('/{announcement}', 'update')->name('update');
+
+        Route::delete('/{announcement}', 'destroy')->name('destroy');
+
+    });
+
+/*
+|--------------------------------------------------------------------------
+| FAQ Management
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('faqs')
+    ->name('faqs.')
+    ->controller(FaqController::class)
+    ->group(function () {
+
+        Route::get('/', 'index')->name('index');
+
+        Route::post('/', 'store')->name('store');
+
+        Route::get('/{faq}', 'show')->name('show');
+
+        Route::put('/{faq}', 'update')->name('update');
+
+        Route::delete('/{faq}', 'destroy')->name('destroy');
+
+    });
+
+// Reward Categories
+Route::resource('reward-categories', AdminRewardCategoryController::class)
+    ->only(['index', 'store', 'show', 'update', 'destroy']);
+
+// Leaderboard Settings
+Route::get('/leaderboard-settings', [LeaderboardSettingController::class, 'index'])->name('leaderboard-settings.index');
+Route::put('/leaderboard-settings', [LeaderboardSettingController::class, 'update'])->name('leaderboard-settings.update');
+
+// Referral Settings
+Route::get('/referral-settings', [ReferralSettingController::class, 'index'])->name('referral-settings.index');
+Route::put('/referral-settings', [ReferralSettingController::class, 'update'])->name('referral-settings.update');
+
+// Position / Rank Settings
+Route::resource('position-settings', PositionSettingController::class)
+    ->parameters(['position-settings' => 'positionRank'])
+    ->only(['index', 'store', 'show', 'update', 'destroy']);
+Route::post('/position-settings/recalculate', [PositionSettingController::class, 'recalculate'])
+    ->name('position-settings.recalculate');
+
+    Route::get('/reports/platform', [PlatformReportController::class, 'index'])->name('reports.platform');
+Route::get('/reports/activity-logs', [ActivityLogController::class, 'index'])->name('reports.activity-logs');
+Route::get('/reports/product-catalogue', [ProductCatalogueReportController::class, 'index'])->name('reports.product-catalogue');
+
+Route::resource('notifications', NotificationBroadcastController::class)
+    ->parameters(['notifications' => 'broadcast'])
+    ->only(['index', 'store', 'destroy']);
+
+Route::resource('support-tickets', SupportTicketController::class)
+    ->parameters(['support-tickets' => 'ticket'])
+    ->only(['index', 'show', 'update', 'destroy']);
+Route::post('/support-tickets/{ticket}/reply', [SupportTicketController::class, 'reply'])
+    ->name('support-tickets.reply');
+
+Route::resource('contact-messages', ContactMessageController::class)
+    ->parameters(['contact-messages' => 'contactMessage'])
+    ->only(['index', 'show', 'update', 'destroy']);
+Route::post('/contact-messages/{contactMessage}/reply', [ContactMessageController::class, 'reply'])
+    ->name('contact-messages.reply');
+
+// My Profile
+Route::get('/profile', [SuperAdminProfileController::class, 'index'])
+    ->name('profile.index');
+
+Route::put('/profile', [SuperAdminProfileController::class, 'update'])
+    ->name('profile.update');
+
+    // Deposit Requests
+Route::get('/deposit-requests', [DepositRequestController::class, 'index'])
+    ->name('deposit-requests.index');
+Route::patch('/deposit-requests/{depositRequest}/approve', [DepositRequestController::class, 'approve'])
+    ->name('deposit-requests.approve');
+Route::patch('/deposit-requests/{depositRequest}/reject', [DepositRequestController::class, 'reject'])
+    ->name('deposit-requests.reject');
+Route::get('/deposit-requests/{depositRequest}/screenshot', [DepositRequestController::class, 'screenshot'])
+    ->name('deposit-requests.screenshot');
+
+// Withdraw Requests
+Route::get('/withdraw-requests', [WithdrawRequestController::class, 'index'])
+    ->name('withdraw-requests.index');
+Route::patch('/withdraw-requests/{withdrawRequest}/approve', [WithdrawRequestController::class, 'approve'])
+    ->name('withdraw-requests.approve');
+Route::patch('/withdraw-requests/{withdrawRequest}/reject', [WithdrawRequestController::class, 'reject'])
+    ->name('withdraw-requests.reject');
+
+// Investment Reports & Monitoring
+Route::prefix('investments')
+    ->name('investments.')
+    ->controller(InvestmentReportController::class)
+    ->group(function () {
+        Route::get('/summary', 'summary')->name('summary');
+        Route::get('/project-wise', 'projectWise')->name('project-wise');
+        Route::get('/profit-loss', 'profitLoss')->name('profit-loss');
+        Route::get('/maturity', 'maturity')->name('maturity');
+    });
+
+// Payment Methods
+Route::prefix('payment-methods')
+    ->name('payment-methods.')
+    ->controller(PaymentMethodController::class)
+    ->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::put('/{paymentMethod}', 'update')->name('update');
+        Route::patch('/{paymentMethod}/toggle', 'toggle')->name('toggle');
+        Route::delete('/{paymentMethod}', 'destroy')->name('destroy');
+    });
+
         });
 
 
@@ -135,7 +424,12 @@ Route::middleware('auth')->group(function () {
 
             Route::get('/payment-information', [PaymentInformationController::class, 'index'])
             ->name('payment-information.index');
+            Route::post('/payment-information', [PaymentInformationController::class, 'store'])
+                ->middleware('throttle:10,1')
+                ->name('payment-information.store');
 
+            Route::delete('/payment-information/{paymentAccount}', [PaymentInformationController::class, 'destroy'])
+                ->name('payment-information.destroy');
             Route::get('/change-password', [ChangePasswordController::class, 'index'])
             ->name('change-password.index');
 
@@ -168,6 +462,13 @@ Route::middleware('auth')->group(function () {
 
 Route::get('/project-details/{slug}', [ProjectDetailsController::class, 'show'])
     ->name('project-details.show');
+Route::post('/project-details/{slug}/buy', [ProjectDetailsController::class, 'buy'])
+    ->middleware('throttle:20,1')
+    ->name('project-details.buy');
+
+Route::post('/my-shares/{project}/sell', [MySharesController::class, 'sell'])
+    ->middleware('throttle:20,1')
+    ->name('my-shares.sell');
 
     Route::get('/my-shares', [MySharesController::class, 'index'])
     ->name('my-shares.index');
@@ -227,30 +528,33 @@ Route::prefix('referrals')->name('referrals.')->controller(ReferralController::c
 
 });
 
-Route::prefix('my-position')
-    ->name('my-position.')
-    ->controller(MyPositionController::class)
-    ->group(function () {
-
-        Route::get('/', 'index')->name('index');
-
-        Route::get('/history', 'history')->name('history');
-
-        Route::get('/locked-shares', 'lockedShares')->name('locked-shares');
-
-        Route::get('/achievement-history', 'achievements')->name('achievements');
-
-    });
-    
-Route::prefix('support')->name('support.')->controller(SupportController::class)->group(function () {
-
-    Route::get('/submit-ticket', 'submitTicket')->name('submit-ticket');
-
-    Route::get('/my-tickets', 'myTickets')->name('my-tickets');
-
-    Route::get('/contact', 'contact')->name('contact');
-
+Route::prefix('my-position')->name('my-position.')->controller(MyPositionController::class)->group(function () {
+    Route::get('/', 'index')->name('index');
+    Route::get('/history', 'history')->name('history');
+    Route::get('/locked-shares', 'lockedShares')->name('locked-shares');
+    Route::get('/achievement-history', 'achievements')->name('achievements');
+    Route::post('/lock', 'lock')->middleware('throttle:20,1')->name('lock');
+    Route::post('/unlock', 'unlock')->middleware('throttle:20,1')->name('unlock');
 });
+    
+        Route::prefix('support')->name('support.')->controller(SupportController::class)->group(function () {
+
+            Route::get('/submit-ticket', 'submitTicket')->name('submit-ticket');
+
+            Route::get('/my-tickets', 'myTickets')->name('my-tickets');
+
+            Route::get('/contact', 'contact')->name('contact');
+
+        });
+
+        Route::get('/deposit', [WalletController::class, 'deposit'])->name('deposit');
+Route::post('/deposit', [WalletController::class, 'storeDeposit'])
+    ->middleware('throttle:10,1')
+    ->name('deposit.store');
+
+Route::post('/withdraw', [WalletController::class, 'storeWithdraw'])
+    ->middleware('throttle:10,1')
+    ->name('withdraw.store');
 
         });
 

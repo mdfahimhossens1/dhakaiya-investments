@@ -5,7 +5,7 @@
     {{-- Brand --}}
     <div class="sidebar-brand">
         <div class="brand-logo">
-        <a href="{{ route('user.dashboard') }}" class="sidebar-logo">
+        <a href="{{ route('dashboard') }}" class="sidebar-logo">
     <img src="{{ asset('images/dhakaiya-logo.png') }}" alt="Dhakaiya Investment Logo">
     </a>
         </div>
@@ -40,6 +40,7 @@
             'user.available-projects.*', 'user.project-details.*', 'user.my-shares.*',
             'user.purchase-history.*', 'user.sales-history.*', 'user.share-transfer.*'
         );
+       
         $recordsActive = request()->routeIs(
             'user.investment-summary.*', 'user.project-wise-records.*',
             'user.profit-loss-history.*', 'user.maturity-information.*'
@@ -267,7 +268,7 @@
             <div class="menu-section-title">MAIN MENU</div>
 
             <a href="{{ route('dashboard') }}"
-                class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                class="sidebar-link {{ request()->routeIs('dashboard', 'super-admin.dashboard', 'admin.dashboard') ? 'active' : '' }}">
                 <span class="menu-icon">⌂</span>
                 <span>Dashboard</span>
             </a>
@@ -275,29 +276,225 @@
 
         @if(auth()->user()->role === 'super_admin')
 
+        @php
+            // Super Admin: kon group er moddhe kon route ache
+            $saPlatform = request()->routeIs(
+                'super-admin.admins.*', 'super-admin.users.*',
+                'super-admin.plans.*', 'super-admin.platform-settings.*'
+            );
+            $saCatalogue = request()->routeIs(
+                'super-admin.companies.*', 'super-admin.projects.*',
+                'super-admin.project-categories.*', 'super-admin.project-templates.*'
+            );
+            $saAccess = request()->routeIs('super-admin.profile-reviews.*');
+            $saWebsite = request()->routeIs(
+                'super-admin.banners.*', 'super-admin.notices.*',
+                'super-admin.announcements.*', 'super-admin.faqs.*'
+            );
+            $saRewards = request()->routeIs(
+                'super-admin.reward-categories.*', 'super-admin.leaderboard-settings.*',
+                'super-admin.referral-settings.*', 'super-admin.position-settings.*'
+            );
+            $saReports = request()->routeIs('super-admin.reports.*');
+            $saInvest = request()->routeIs('super-admin.investments.*');
+            $saComm = request()->routeIs(
+                'super-admin.notifications.*', 'super-admin.support-tickets.*',
+                'super-admin.contact-messages.*'
+            );
+            $saSystem = request()->routeIs('super-admin.profile.*');
+            
+            $saInvest = request()->routeIs('super-admin.investments.*')
+        || request()->routeIs('super-admin.reports.activity-logs')
+        || request()->routeIs('super-admin.reports.product-catalogue');
+
+        @endphp
+
+        {{-- SUPER ADMIN COLLAPSIBLE MENU GROUPS --}}
+
         <div class="menu-section">
-            <div class="menu-section-title">PLATFORM MANAGEMENT</div>
 
-            <a href="{{ route('super-admin.admins.index') }}"
-                class="sidebar-link {{ request()->routeIs('super-admin.admins.*') ? 'active' : '' }}">
-                <span class="menu-icon">♙</span>
-                <span>Admin Management</span>
-            </a>
+            <details class="menu-group {{ $saPlatform ? 'active' : '' }}" {{ $saPlatform ? 'open' : '' }}>
+                <summary>
+                    <span class="menu-icon">⚙</span>
+                    <span>Platform Management</span>
+                    <span class="menu-arrow">›</span>
+                </summary>
+                <div class="submenu">
+                    <a href="{{ route('super-admin.admins.index') }}" class="{{ request()->routeIs('super-admin.admins.*') ? 'active' : '' }}">Admin Management</a>
+                    <a href="{{ route('super-admin.users.index') }}" class="{{ request()->routeIs('super-admin.users.*') ? 'active' : '' }}">User Management</a>
+                    <a href="{{ route('super-admin.plans.index') }}" class="{{ request()->routeIs('super-admin.plans.*') ? 'active' : '' }}">Platform Plans</a>
+                    <a href="{{ route('super-admin.platform-settings.index') }}" class="{{ request()->routeIs('super-admin.platform-settings.*') ? 'active' : '' }}">Platform Settings</a>
+                </div>
+            </details>
 
-            <a href="#" class="sidebar-link">
-                <span class="menu-icon">♧</span>
-                <span>User Management</span>
-            </a>
+            <details class="menu-group {{ $saCatalogue ? 'active' : '' }}" {{ $saCatalogue ? 'open' : '' }}>
+                <summary>
+                    <span class="menu-icon">▣</span>
+                    <span>Company & Share Catalogue</span>
+                    <span class="menu-arrow">›</span>
+                </summary>
+                <div class="submenu">
+                    <a href="{{ route('super-admin.companies.index') }}" class="{{ request()->routeIs('super-admin.companies.*') ? 'active' : '' }}">Companies</a>
+                    <a href="{{ route('super-admin.projects.index') }}" class="{{ request()->routeIs('super-admin.projects.*') ? 'active' : '' }}">Share Products</a>
+                    <a href="{{ route('super-admin.project-categories.index') }}" class="{{ request()->routeIs('super-admin.project-categories.*') ? 'active' : '' }}">Product Categories</a>
+                    <a href="{{ route('super-admin.project-templates.index') }}" class="{{ request()->routeIs('super-admin.project-templates.*') ? 'active' : '' }}">Product Templates</a>
+                </div>
+            </details>
 
-            <a href="#" class="sidebar-link">
-                <span class="menu-icon">▣</span>
-                <span>Subscription Plans</span>
-            </a>
+{{-- PROJECT RECORDS & MONITORING --}}
 
-            <a href="#" class="sidebar-link">
-                <span class="menu-icon">⚙</span>
-                <span>Platform Settings</span>
-            </a>
+<details class="menu-group {{ $saInvest ? 'active' : '' }}"
+    {{ $saInvest ? 'open' : '' }}>
+
+    <summary>
+        <span class="menu-icon">▤</span>
+        <span>Project Records & Monitoring</span>
+        <span class="menu-arrow">›</span>
+    </summary>
+
+    <div class="submenu">
+
+        <a href="{{ route('super-admin.investments.summary') }}"
+            class="{{ request()->routeIs('super-admin.investments.summary') ? 'active' : '' }}">
+            Investment Summary
+        </a>
+
+        <a href="{{ route('super-admin.investments.project-wise') }}"
+            class="{{ request()->routeIs('super-admin.investments.project-wise') ? 'active' : '' }}">
+            Project-wise Records
+        </a>
+
+        <a href="{{ route('super-admin.investments.profit-loss') }}"
+            class="{{ request()->routeIs('super-admin.investments.profit-loss') ? 'active' : '' }}">
+            Profit & Loss History
+        </a>
+
+        <a href="{{ route('super-admin.investments.maturity') }}"
+            class="{{ request()->routeIs('super-admin.investments.maturity') ? 'active' : '' }}">
+            Maturity Information
+        </a>
+
+        <a href="{{ route('super-admin.reports.activity-logs') }}"
+            class="{{ request()->routeIs('super-admin.reports.activity-logs') ? 'active' : '' }}">
+            Project Activity
+        </a>
+
+        <a href="{{ route('super-admin.reports.product-catalogue') }}"
+            class="{{ request()->routeIs('super-admin.reports.product-catalogue') ? 'active' : '' }}">
+            Catalogue Reports
+        </a>
+
+    </div>
+</details>
+
+            <details class="menu-group {{ $saAccess ? 'active' : '' }}" {{ $saAccess ? 'open' : '' }}>
+                <summary>
+                    <span class="menu-icon">♙</span>
+                    <span>Access Management</span>
+                    <span class="menu-arrow">›</span>
+                </summary>
+                <div class="submenu">
+                    <a href="{{ route('super-admin.profile-reviews.index') }}" class="{{ request()->routeIs('super-admin.profile-reviews.*') ? 'active' : '' }}">KYC / Profile Review</a>
+                    <a href="#">Roles & Permissions</a>
+                </div>
+            </details>
+
+            <details class="menu-group {{ $saWebsite ? 'active' : '' }}" {{ $saWebsite ? 'open' : '' }}>
+                <summary>
+                    <span class="menu-icon">▧</span>
+                    <span>Website Content</span>
+                    <span class="menu-arrow">›</span>
+                </summary>
+                <div class="submenu">
+                    <a href="{{ route('super-admin.banners.index') }}" class="{{ request()->routeIs('super-admin.banners.*') ? 'active' : '' }}">Banner Management</a>
+                    <a href="{{ route('super-admin.notices.index') }}" class="{{ request()->routeIs('super-admin.notices.*') ? 'active' : '' }}">Notice Board</a>
+                    <a href="{{ route('super-admin.announcements.index') }}" class="{{ request()->routeIs('super-admin.announcements.*') ? 'active' : '' }}">Announcements</a>
+                    <a href="{{ route('super-admin.faqs.index') }}" class="{{ request()->routeIs('super-admin.faqs.*') ? 'active' : '' }}">FAQs</a>
+                </div>
+            </details>
+
+            @php
+    $saFinance = request()->routeIs('super-admin.deposit-requests.*')
+        || request()->routeIs('super-admin.withdraw-requests.*')
+        || request()->routeIs('super-admin.payment-methods.*');
+@endphp
+
+<details class="menu-group {{ $saFinance ? 'active' : '' }}" {{ $saFinance ? 'open' : '' }}>
+    <summary>
+        <span class="menu-icon">▣</span>
+        <span>Payments & Wallet</span>
+        <span class="menu-arrow">›</span>
+    </summary>
+
+    <div class="submenu">
+        <a href="{{ route('super-admin.payment-methods.index') }}"
+            class="{{ request()->routeIs('super-admin.payment-methods.*') ? 'active' : '' }}">
+            Payment Methods
+        </a>
+
+        <a href="{{ route('super-admin.deposit-requests.index') }}"
+            class="{{ request()->routeIs('super-admin.deposit-requests.*') ? 'active' : '' }}">
+            Deposit Requests
+        </a>
+
+        <a href="{{ route('super-admin.withdraw-requests.index') }}"
+            class="{{ request()->routeIs('super-admin.withdraw-requests.*') ? 'active' : '' }}">
+            Withdraw Requests
+        </a>
+    </div>
+</details>
+
+            <details class="menu-group {{ $saRewards ? 'active' : '' }}" {{ $saRewards ? 'open' : '' }}>
+                <summary>
+                    <span class="menu-icon">🎁</span>
+                    <span>Rewards & Referrals</span>
+                    <span class="menu-arrow">›</span>
+                </summary>
+                <div class="submenu">
+                    <a href="{{ route('super-admin.reward-categories.index') }}" class="{{ request()->routeIs('super-admin.reward-categories.*') ? 'active' : '' }}">Reward Categories</a>
+                    <a href="{{ route('super-admin.leaderboard-settings.index') }}" class="{{ request()->routeIs('super-admin.leaderboard-settings.*') ? 'active' : '' }}">Leaderboard Settings</a>
+                    <a href="{{ route('super-admin.referral-settings.index') }}" class="{{ request()->routeIs('super-admin.referral-settings.*') ? 'active' : '' }}">Referral Settings</a>
+                    <a href="{{ route('super-admin.position-settings.index') }}" class="{{ request()->routeIs('super-admin.position-settings.*') ? 'active' : '' }}">Position / Rank Settings</a>
+                </div>
+            </details>
+
+            <details class="menu-group {{ $saReports ? 'active' : '' }}" {{ $saReports ? 'open' : '' }}>
+                <summary>
+                    <span class="menu-icon">▤</span>
+                    <span>Reports & Monitoring</span>
+                    <span class="menu-arrow">›</span>
+                </summary>
+                <div class="submenu">
+                    <a href="{{ route('super-admin.reports.platform') }}" class="{{ request()->routeIs('super-admin.reports.platform') ? 'active' : '' }}">Platform Reports</a>
+                    <a href="{{ route('super-admin.reports.activity-logs') }}" class="{{ request()->routeIs('super-admin.reports.activity-logs') ? 'active' : '' }}">User Activity Logs</a>
+                    <a href="{{ route('super-admin.reports.product-catalogue') }}" class="{{ request()->routeIs('super-admin.reports.product-catalogue') ? 'active' : '' }}">Product Catalogue Reports</a>
+                </div>
+            </details>
+
+            <details class="menu-group {{ $saComm ? 'active' : '' }}" {{ $saComm ? 'open' : '' }}>
+                <summary>
+                    <span class="menu-icon">☏</span>
+                    <span>Communication & Support</span>
+                    <span class="menu-arrow">›</span>
+                </summary>
+                <div class="submenu">
+                    <a href="{{ route('super-admin.notifications.index') }}" class="{{ request()->routeIs('super-admin.notifications.*') ? 'active' : '' }}">Notifications</a>
+                    <a href="{{ route('super-admin.support-tickets.index') }}" class="{{ request()->routeIs('super-admin.support-tickets.*') ? 'active' : '' }}">Support Tickets</a>
+                    <a href="{{ route('super-admin.contact-messages.index') }}" class="{{ request()->routeIs('super-admin.contact-messages.*') ? 'active' : '' }}">Contact Messages</a>
+                </div>
+            </details>
+
+            <details class="menu-group {{ $saSystem ? 'active' : '' }}" {{ $saSystem ? 'open' : '' }}>
+                <summary>
+                    <span class="menu-icon">⚙</span>
+                    <span>System Management</span>
+                    <span class="menu-arrow">›</span>
+                </summary>
+                <div class="submenu">
+                    <a href="{{ route('super-admin.profile.index') }}" class="{{ request()->routeIs('super-admin.profile.*') ? 'active' : '' }}">My Profile</a>
+                </div>
+            </details>
+
         </div>
 
         @else

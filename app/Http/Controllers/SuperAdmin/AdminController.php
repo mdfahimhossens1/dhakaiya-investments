@@ -27,22 +27,44 @@ class AdminController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'min:2', 'max:100'],
-            'phone' => [
-                'required',
-                'string',
-                'regex:/^\+[1-9][0-9]{7,14}$/',
-                Rule::unique('users', 'phone'),
-            ],
-            'email' => [
-                'nullable',
-                'email',
-                'max:255',
-                Rule::unique('users', 'email'),
-            ],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-        ]);
+$validated = $request->validate([
+
+    'name' => [
+        'required',
+        'string',
+        'min:2',
+        'max:100',
+    ],
+
+    'country' => [
+        'required',
+        'string',
+        'size:2',
+        'regex:/^[A-Z]{2}$/',
+    ],
+
+    'phone' => [
+        'required',
+        'string',
+        'regex:/^\+[1-9][0-9]{7,14}$/',
+        Rule::unique('users', 'phone'),
+    ],
+
+    'email' => [
+        'nullable',
+        'email',
+        'max:255',
+        Rule::unique('users', 'email'),
+    ],
+
+    'password' => [
+        'required',
+        'string',
+        'min:8',
+        'confirmed',
+    ],
+
+]);
 
         DB::transaction(function () use ($validated) {
 
@@ -52,7 +74,7 @@ class AdminController extends Controller
 
             $admin = User::create([
                 'name' => $validated['name'],
-                'country' => 'BD',
+                'country' => $validated['country'],
                 'phone' => $validated['phone'],
                 'email' => $validated['email'] ?? null,
                 'password' => $validated['password'],

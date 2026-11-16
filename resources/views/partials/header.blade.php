@@ -46,10 +46,21 @@
 
                 <div class="dropdown-divider"></div>
 
-                <a href="{{ route('user.personal-information.index') }}" class="dropdown-item">
-                    <span>👤</span>
-                    My Profile
-                </a>
+                @php
+                    $profileRoute = match (auth()->user()->role) {
+                        'super_admin' => 'super-admin.profile.index',
+                        'admin' => 'admin.profile.index',
+                        'user' => 'user.personal-information.index',
+                        default => null,
+                    };
+                @endphp
+
+                @if($profileRoute && Route::has($profileRoute))
+                    <a href="{{ route($profileRoute) }}" class="dropdown-item">
+                        <span>👤</span>
+                        My Profile
+                    </a>
+                @endif
 
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf

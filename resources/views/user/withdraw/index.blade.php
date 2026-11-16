@@ -4,374 +4,138 @@
 
 @section('content')
 
-<style>
-    .withdraw-page {
-        display: grid;
-        gap: 22px;
-    }
+@include('user.wallet._styles')
 
-    .withdraw-hero {
-        background: linear-gradient(135deg, #102b26, #087f5b);
-        padding: 30px;
-        color: #fff;
-        border-radius: 15px;
-        position: relative;
-        overflow: hidden;
-    }
+@php
+    $sym = \App\Support\Currency::symbol($currency);
+    $recent = $user->withdrawRequests()->where('currency', $currency)->latest()->limit(5)->get();
+@endphp
 
-    .withdraw-hero h2 {
-        font-size: 25px;
-        font-weight: 700;
-        margin: 0 0 9px;
-    }
+<div class="wl-page">
 
-    .withdraw-hero p {
-        color: #d5e9e1;
-        font-size: 14px;
-        margin: 0;
-    }
-
-    .withdraw-hero-icon {
-        position: absolute;
-        right: 35px;
-        top: 20px;
-        font-size: 75px;
-        opacity: .15;
-    }
-
-    .withdraw-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 16px;
-    }
-
-    .withdraw-card {
-        background: #fff;
-        border: 1px solid #e8edf0;
-        border-radius: 13px;
-        padding: 20px;
-    }
-
-    .withdraw-icon {
-        width: 43px;
-        height: 43px;
-        border-radius: 10px;
-        background: #e8f5ef;
-        color: #087f5b;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 18px;
-        margin-bottom: 15px;
-    }
-
-    .withdraw-card h3 {
-        font-size: 22px;
-        color: #1e293b;
-        margin: 0 0 5px;
-    }
-
-    .withdraw-card p {
-        font-size: 13px;
-        color: #84919f;
-        margin: 0;
-    }
-
-    .withdraw-section {
-        background: #fff;
-        border: 1px solid #e8edf0;
-        border-radius: 13px;
-        padding: 24px;
-    }
-
-    .withdraw-section h3 {
-        font-size: 18px;
-        color: #1e293b;
-        margin: 0 0 7px;
-        font-weight: 700;
-    }
-
-    .withdraw-section .section-description {
-        color: #84919f;
-        font-size: 13px;
-        margin-bottom: 20px;
-    }
-
-    .withdraw-methods {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 15px;
-    }
-
-    .withdraw-method {
-        border: 1px solid #e8edf0;
-        background: #fafbfc;
-        border-radius: 11px;
-        padding: 20px;
-        text-align: center;
-    }
-
-    .withdraw-method i {
-        font-size: 27px;
-        color: #087f5b;
-        margin-bottom: 12px;
-    }
-
-    .withdraw-method h4 {
-        color: #1e293b;
-        font-size: 15px;
-        margin: 0 0 6px;
-    }
-
-    .withdraw-method p {
-        font-size: 12px;
-        color: #84919f;
-        margin: 0;
-    }
-
-    .withdraw-badge {
-        display: inline-block;
-        padding: 6px 11px;
-        border-radius: 30px;
-        background: #fff4db;
-        color: #946200;
-        font-size: 11px;
-        font-weight: 700;
-        margin-top: 12px;
-    }
-
-    .withdraw-notice {
-        background: #eff6ff;
-        border: 1px solid #dbeafe;
-        color: #1e40af;
-        border-radius: 10px;
-        padding: 16px;
-        font-size: 13px;
-        line-height: 1.7;
-    }
-
-    .withdraw-empty {
-        text-align: center;
-        padding: 35px 15px;
-        background: #fafbfc;
-        border: 1px dashed #dce4e8;
-        border-radius: 10px;
-    }
-
-    .withdraw-empty i {
-        font-size: 35px;
-        color: #b8c3cc;
-        margin-bottom: 12px;
-    }
-
-    .withdraw-empty h4 {
-        color: #334155;
-        font-size: 16px;
-        margin: 0 0 7px;
-    }
-
-    .withdraw-empty p {
-        color: #84919f;
-        font-size: 13px;
-        margin: 0;
-    }
-
-    @media(max-width: 1000px) {
-        .withdraw-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-
-    @media(max-width: 600px) {
-        .withdraw-hero {
-            padding: 23px;
-        }
-
-        .withdraw-hero h2 {
-            font-size: 21px;
-        }
-
-        .withdraw-hero-icon {
-            font-size: 55px;
-            right: 15px;
-        }
-
-        .withdraw-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-
-        .withdraw-card {
-            padding: 15px;
-        }
-
-        .withdraw-card h3 {
-            font-size: 19px;
-        }
-
-        .withdraw-section {
-            padding: 17px;
-        }
-
-        .withdraw-methods {
-            grid-template-columns: 1fr;
-        }
-    }
-</style>
-
-<div class="withdraw-page">
-
-    {{-- Hero --}}
-    <div class="withdraw-hero">
-
-        <div class="withdraw-hero-icon">
-            <i class="fa-solid fa-money-bill-transfer"></i>
+    <div class="wl-hero">
+        <div>
+            <h2>💸 Withdraw</h2>
+            <p>Request a withdrawal to one of your saved payment accounts.</p>
         </div>
-
-        <h2>Withdraw</h2>
-
-        <p>
-            View withdrawal information and your account withdrawal status.
-        </p>
-
+        <div class="wl-hero-actions">
+            <a href="{{ route('user.withdrawal-history.index') }}">History</a>
+            <a href="{{ route('user.payment-information.index') }}" class="alt">Payment Accounts</a>
+        </div>
     </div>
 
-    {{-- Summary --}}
-    <div class="withdraw-grid">
+    @include('user.wallet._flash')
 
-        <div class="withdraw-card">
-            <div class="withdraw-icon">
-                <i class="fa-solid fa-wallet"></i>
-            </div>
-
-            <h3>
-                {{ number_format($withdrawalSummary['available_balance'], 2) }}
-            </h3>
-
-            <p>Available Balance</p>
+    @if(count($currencies) > 1)
+        <div class="wl-tabs">
+            @foreach($currencies as $c)
+                <a href="{{ route('user.withdraw', ['currency' => $c]) }}" class="{{ $c === $currency ? 'on' : '' }}">{{ $c }} Wallet</a>
+            @endforeach
         </div>
+    @endif
 
-        <div class="withdraw-card">
-            <div class="withdraw-icon">
-                <i class="fa-solid fa-arrow-down-wide-short"></i>
-            </div>
-
-            <h3>
-                {{ number_format($withdrawalSummary['minimum_withdrawal'], 2) }}
-            </h3>
-
-            <p>Minimum Withdrawal</p>
-        </div>
-
-        <div class="withdraw-card">
-            <div class="withdraw-icon">
-                <i class="fa-solid fa-clock"></i>
-            </div>
-
-            <h3>
-                {{ $withdrawalSummary['pending_withdrawals'] }}
-            </h3>
-
-            <p>Pending Withdrawals</p>
-        </div>
-
-        <div class="withdraw-card">
-            <div class="withdraw-icon">
-                <i class="fa-solid fa-circle-check"></i>
-            </div>
-
-            <h3>
-                {{ $withdrawalSummary['completed_withdrawals'] }}
-            </h3>
-
-            <p>Completed Withdrawals</p>
-        </div>
-
+    <div class="wl-stats">
+        <div class="wl-stat"><div class="ic"><i class="fas fa-wallet"></i></div>
+            <div><p>Available Balance</p><h3>{{ $sym }} {{ number_format((float) $withdrawalSummary['available_balance'], 2) }}</h3><small>{{ $currency }} wallet</small></div></div>
+        <div class="wl-stat"><div class="ic blue"><i class="fas fa-arrow-down-wide-short"></i></div>
+            <div><p>Minimum Withdrawal</p><h3>{{ $sym }} {{ number_format((float) $withdrawalSummary['minimum_withdrawal'], 2) }}</h3><small>Per request</small></div></div>
+        <div class="wl-stat"><div class="ic orange"><i class="fas fa-clock"></i></div>
+            <div><p>Pending (on hold)</p><h3>{{ $sym }} {{ number_format((float) $withdrawalSummary['pending_withdrawals'], 2) }}</h3><small>Awaiting payout</small></div></div>
+        <div class="wl-stat"><div class="ic purple"><i class="fas fa-circle-check"></i></div>
+            <div><p>Total Paid Out</p><h3>{{ $sym }} {{ number_format((float) $withdrawalSummary['completed_withdrawals'], 2) }}</h3><small>Completed</small></div></div>
     </div>
 
-    {{-- Withdrawal Methods --}}
-    <div class="withdraw-section">
-
-        <h3>
-            <i class="fa-solid fa-building-columns"
-               style="color:#087f5b;"></i>
-            Withdrawal Methods
-        </h3>
-
-        <p class="section-description">
-            Available withdrawal methods will be displayed here.
-        </p>
+    <div class="wl-card">
+        <div class="wl-card-h">
+            <div><h3>Request Withdrawal</h3><p>You can withdraw your wallet balance at any time.</p></div>
+        </div>
 
         @if($withdrawalMethods->isEmpty())
-
-            <div class="withdraw-methods">
-
-                <div class="withdraw-method">
-                    <i class="fa-solid fa-building-columns"></i>
-                    <h4>Bank Transfer</h4>
-                    <p>International bank transfer method.</p>
-                    <span class="withdraw-badge">Not Configured</span>
-                </div>
-
-                <div class="withdraw-method">
-                    <i class="fa-solid fa-credit-card"></i>
-                    <h4>Digital Payment</h4>
-                    <p>Supported digital payment methods.</p>
-                    <span class="withdraw-badge">Not Configured</span>
-                </div>
-
-                <div class="withdraw-method">
-                    <i class="fa-solid fa-wallet"></i>
-                    <h4>Wallet Transfer</h4>
-                    <p>Supported wallet withdrawal method.</p>
-                    <span class="withdraw-badge">Not Configured</span>
-                </div>
-
+            <div class="wl-empty">
+                <div class="ic"><i class="fas fa-building-columns"></i></div>
+                <h4>No {{ $currency }} payment account found</h4>
+                <p>Add an account first. <a href="{{ route('user.payment-information.index') }}">Add payment account</a></p>
             </div>
+        @else
+            <form method="POST" action="{{ route('user.withdraw.store') }}" class="wl-form" style="max-width:520px">
+                @csrf
+                <input type="hidden" name="currency" value="{{ $currency }}">
 
+                <label for="acc">Send to</label>
+                <select name="payment_account_id" id="acc" required onchange="wdCalc()">
+                    @foreach($withdrawalMethods as $a)
+                        <option value="{{ $a->id }}" data-fee="{{ $a->paymentMethod->withdraw_fee_percent }}"
+                                @selected((string) old('payment_account_id') === (string) $a->id)>
+                            {{ $a->paymentMethod->name }} — {{ $a->maskedDetails() }}{{ $a->is_default ? ' (Default)' : '' }}
+                        </option>
+                    @endforeach
+                </select>
+
+                <label for="amt">Amount ({{ $currency }})</label>
+                <input type="number" step="0.01" min="{{ $withdrawalSummary['minimum_withdrawal'] }}"
+                       name="amount" id="amt" value="{{ old('amount') }}" required oninput="wdCalc()">
+
+                <div class="wl-preview" id="wdPreview"></div>
+
+                <button type="submit" class="wl-btn primary">Submit Withdrawal Request</button>
+            </form>
         @endif
-
     </div>
 
-    {{-- Withdrawal History --}}
-    <div class="withdraw-section">
-
-        <h3>
-            <i class="fa-solid fa-clock-rotate-left"
-               style="color:#087f5b;"></i>
-            Recent Withdrawal Activity
-        </h3>
-
-        <p class="section-description">
-            Your withdrawal activity summary.
-        </p>
-
-        <div class="withdraw-empty">
-
-            <i class="fa-solid fa-receipt"></i>
-
-            <h4>No Withdrawal Activity</h4>
-
-            <p>
-                Your withdrawal records will appear here when available.
-            </p>
-
+    <div class="wl-card">
+        <div class="wl-card-h">
+            <div><h3>Recent Withdrawal Activity</h3><p>Your latest {{ $currency }} withdrawal requests.</p></div>
+            <a href="{{ route('user.withdrawal-history.index') }}" class="wl-pill">View All</a>
         </div>
 
+        @if($recent->isEmpty())
+            <div class="wl-empty">
+                <div class="ic"><i class="fas fa-receipt"></i></div>
+                <h4>No Withdrawal Activity</h4>
+                <p>Your withdrawal requests will appear here.</p>
+            </div>
+        @else
+            <div class="wl-table-wrap">
+                <table class="wl-table" style="min-width:560px">
+                    <thead><tr><th>ID</th><th>Date</th><th>Amount</th><th>Receive</th><th>Status</th></tr></thead>
+                    <tbody>
+                        @foreach($recent as $w)
+                            <tr>
+                                <td>#WR-{{ $w->id }}</td>
+                                <td>{{ $w->created_at->format('d M Y') }}</td>
+                                <td>{{ $sym }} {{ number_format((float) $w->amount, 2) }}</td>
+                                <td>{{ $sym }} {{ number_format((float) $w->net_amount, 2) }}</td>
+                                <td><span class="wl-badge {{ $w->status }}">{{ $w->status === 'approved' ? 'Paid' : ucfirst($w->status) }}</span></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
     </div>
 
-    {{-- Notice --}}
-    <div class="withdraw-notice">
-
-        <i class="fa-solid fa-circle-info"></i>
-
-        <strong>Information:</strong>
-
-        Withdrawal services are currently not configured.
-        No withdrawal requests or money transfers can be made through this page.
-
+    <div class="wl-notice">
+        <i class="fas fa-circle-info"></i>
+        <div>
+            <h4>How withdrawal works</h4>
+            <p>The requested amount is held from your wallet right away. Our team sends the money to your account and marks the request <strong>Paid</strong>. If it is rejected, the amount returns to your wallet. Withdrawal fees depend on the payment method.</p>
+        </div>
     </div>
 
 </div>
+
+<script>
+function wdCalc() {
+    var sel = document.getElementById('acc'), amt = document.getElementById('amt'), box = document.getElementById('wdPreview');
+    if (!sel || !amt || !box) return;
+    var v = parseFloat(amt.value);
+    if (!v || v <= 0) { box.style.display = 'none'; return; }
+    var fee = parseFloat(sel.options[sel.selectedIndex].dataset.fee || 0);
+    var f = v * fee / 100, n = v - f;
+    box.style.display = 'block';
+    box.innerHTML = 'Fee (' + fee + '%): <strong>{{ $sym }} ' + f.toFixed(2) + '</strong> &nbsp;|&nbsp; You will receive: <strong>{{ $sym }} ' + n.toFixed(2) + '</strong>';
+}
+wdCalc();
+</script>
 
 @endsection

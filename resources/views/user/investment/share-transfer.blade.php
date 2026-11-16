@@ -4,338 +4,187 @@
 
 @section('content')
 
-<div class="page-header">
-    <div>
-        <h2>Share Transfer / Resale</h2>
-        <p>View share transfer and resale information.</p>
-    </div>
-</div>
+@include('partials.styles')
 
 <style>
-    .transfer-summary {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-        gap: 18px;
-        margin-bottom: 25px;
-    }
-
-    .transfer-card {
-        background: #fff;
-        border: 1px solid #e8edf0;
-        border-radius: 12px;
-        padding: 22px;
-    }
-
-    .transfer-card .label {
-        color: #84919f;
-        font-size: 13px;
-        margin-bottom: 10px;
-    }
-
-    .transfer-card h3 {
-        font-size: 25px;
-        color: #1e293b;
-        margin: 0;
-    }
-
-    .transfer-panel {
-        background: #fff;
-        border: 1px solid #e8edf0;
-        border-radius: 12px;
-        padding: 22px;
-        margin-bottom: 20px;
-    }
-
-    .transfer-panel-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 15px;
-        margin-bottom: 20px;
-    }
-
-    .transfer-filter select {
-        padding: 10px 14px;
-        border: 1px solid #e8edf0;
-        border-radius: 7px;
-        background: #fff;
-        min-width: 150px;
-    }
-
-    .transfer-table {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 850px;
-    }
-
-    .transfer-table th,
-    .transfer-table td {
-        padding: 14px 12px;
-        border-bottom: 1px solid #edf0f2;
-        text-align: left;
-        font-size: 13px;
-    }
-
-    .transfer-table th {
-        color: #84919f;
-        font-weight: 600;
-        background: #f8fafb;
-    }
-
-    .transfer-empty {
-        text-align: center;
-        padding: 55px 15px;
-    }
-
-    .transfer-empty i {
-        font-size: 45px;
-        color: #cbd5e1;
-        margin-bottom: 15px;
-    }
-
-    .transfer-empty h3 {
-        color: #334155;
-        margin-bottom: 8px;
-    }
-
-    .transfer-empty p {
-        color: #84919f;
-        font-size: 13px;
-    }
-
-    .transfer-info {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-        gap: 18px;
-        margin-bottom: 20px;
-    }
-
-    .transfer-info-card {
-        background: #fff;
-        border: 1px solid #e8edf0;
-        border-radius: 12px;
-        padding: 22px;
-    }
-
-    .transfer-info-card i {
-        font-size: 24px;
-        color: #087f5b;
-        margin-bottom: 14px;
-    }
-
-    .transfer-info-card h4 {
-        margin: 0 0 8px;
-        color: #1e293b;
-    }
-
-    .transfer-info-card p {
-        color: #84919f;
-        font-size: 13px;
-        line-height: 1.7;
-        margin: 0;
-    }
-
-    .transfer-notice {
-        background: #fff8e6;
-        border: 1px solid #f5dfa5;
-        color: #856404;
-        border-radius: 10px;
-        padding: 16px;
-        font-size: 13px;
-        line-height: 1.7;
-    }
-
-    @media(max-width: 576px) {
-        .transfer-panel {
-            padding: 15px;
-        }
-
-        .transfer-filter,
-        .transfer-filter select {
-            width: 100%;
-        }
-    }
+    .tr-info { display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:18px; margin-bottom:20px; }
+    .tr-info-card { background:var(--white); border:1px solid var(--border); border-radius:12px; padding:22px; }
+    .tr-info-card i { font-size:24px; color:var(--primary); margin-bottom:14px; }
+    .tr-info-card h4 { margin:0 0 8px; color:var(--text); font-size:15px; }
+    .tr-info-card p { color:var(--muted); font-size:13px; line-height:1.7; margin:0; }
 </style>
 
-{{-- Summary --}}
-<div class="transfer-summary">
+<div class="inv-page">
 
-    <div class="transfer-card">
-        <div class="label">Total Records</div>
-        <h3>{{ $summary['total_records'] }}</h3>
-    </div>
-
-    <div class="transfer-card">
-        <div class="label">Pending Requests</div>
-        <h3>{{ $summary['pending'] }}</h3>
-    </div>
-
-    <div class="transfer-card">
-        <div class="label">Completed Transfers</div>
-        <h3>{{ $summary['completed'] }}</h3>
-    </div>
-
-    <div class="transfer-card">
-        <div class="label">Rejected Requests</div>
-        <h3>{{ $summary['rejected'] }}</h3>
-    </div>
-
-</div>
-
-{{-- Information Cards --}}
-<div class="transfer-info">
-
-    <div class="transfer-info-card">
-        <i class="fa-solid fa-right-left"></i>
-        <h4>Share Transfer</h4>
-        <p>
-            Information about transferring ownership between eligible
-            parties, subject to applicable rules and verification.
-        </p>
-    </div>
-
-    <div class="transfer-info-card">
-        <i class="fa-solid fa-arrow-right-arrow-left"></i>
-        <h4>Share Resale</h4>
-        <p>
-            Information about potential resale procedures, eligibility
-            and applicable approval requirements.
-        </p>
-    </div>
-
-    <div class="transfer-info-card">
-        <i class="fa-solid fa-shield-halved"></i>
-        <h4>Security & Verification</h4>
-        <p>
-            Any future transfer process will require appropriate identity
-            checks, ownership verification and security controls.
-        </p>
-    </div>
-
-</div>
-
-{{-- Transfer History --}}
-<div class="transfer-panel">
-
-    <div class="transfer-panel-header">
-
+    {{-- Heading --}}
+    <div class="inv-heading">
         <div>
-            <h3 style="margin:0 0 5px;">Transfer / Resale History</h3>
+            <h2>Share Transfer / Resale</h2>
+            <p>View share transfer and resale information.</p>
+        </div>
 
-            <p style="margin:0;color:#84919f;font-size:13px;">
-                Review your previous transfer and resale records.
+        <span class="inv-badge"><i class="fas fa-right-left"></i> Transfer Records</span>
+    </div>
+
+    @if(session('success'))
+        <div class="inv-alert success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
+    @endif
+
+    @if(session('error'))
+        <div class="inv-alert error"><i class="fas fa-exclamation-circle"></i> {{ session('error') }}</div>
+    @endif
+
+
+    {{-- Summary --}}
+    <div class="inv-summary">
+
+        <div class="inv-stat">
+            <div class="icon"><i class="fas fa-layer-group"></i></div>
+            <div class="label">Total Records</div>
+            <h3>{{ number_format($summary['total_records']) }}</h3>
+            <small>All transfer requests</small>
+        </div>
+
+        <div class="inv-stat">
+            <div class="icon"><i class="fas fa-clock"></i></div>
+            <div class="label">Pending Requests</div>
+            <h3>{{ number_format($summary['pending']) }}</h3>
+            <small>Awaiting review</small>
+        </div>
+
+        <div class="inv-stat">
+            <div class="icon"><i class="fas fa-check-circle"></i></div>
+            <div class="label">Completed Transfers</div>
+            <h3>{{ number_format($summary['completed']) }}</h3>
+            <small>{{ number_format($summary['approved']) }} approved</small>
+        </div>
+
+        <div class="inv-stat">
+            <div class="icon"><i class="fas fa-times-circle"></i></div>
+            <div class="label">Rejected Requests</div>
+            <h3>{{ number_format($summary['rejected']) }}</h3>
+            <small>Rejected records</small>
+        </div>
+
+    </div>
+
+
+    {{-- Information Cards --}}
+    <div class="tr-info">
+
+        <div class="tr-info-card">
+            <i class="fas fa-right-left"></i>
+            <h4>Share Transfer</h4>
+            <p>Transferring ownership between eligible users, subject to applicable rules and verification.</p>
+        </div>
+
+        <div class="tr-info-card">
+            <i class="fas fa-hand-holding-usd"></i>
+            <h4>Share Resale</h4>
+            <p>
+                You can already resell your shares from the
+                <a href="{{ route('user.my-shares.index') }}" style="color:var(--primary); font-weight:600;">My Shares</a>
+                page. Resale history is available in
+                <a href="{{ route('user.sales-history.index') }}" style="color:var(--primary); font-weight:600;">Sales History</a>.
             </p>
         </div>
 
-        <form method="GET"
-              action="{{ route('user.share-transfer.index') }}"
-              class="transfer-filter">
+        <div class="tr-info-card">
+            <i class="fas fa-shield-alt"></i>
+            <h4>Security & Verification</h4>
+            <p>Any future transfer process will require identity checks, ownership verification and security controls.</p>
+        </div>
 
-            <select name="status" onchange="this.form.submit()">
+    </div>
 
-                <option value="all" {{ $status === 'all' ? 'selected' : '' }}>
-                    All Status
-                </option>
 
-                <option value="pending" {{ $status === 'pending' ? 'selected' : '' }}>
-                    Pending
-                </option>
+    {{-- History --}}
+    <div class="inv-panel">
 
-                <option value="approved" {{ $status === 'approved' ? 'selected' : '' }}>
-                    Approved
-                </option>
+        <div class="inv-panel-header">
+            <h4>Transfer History</h4>
+            <p>Review your previous share transfer records.</p>
+        </div>
 
-                <option value="completed" {{ $status === 'completed' ? 'selected' : '' }}>
-                    Completed
-                </option>
+        <form method="GET" action="{{ route('user.share-transfer.index') }}" class="inv-filter">
 
-                <option value="rejected" {{ $status === 'rejected' ? 'selected' : '' }}>
-                    Rejected
-                </option>
-
+            <select name="status">
+                <option value="all" {{ $status === 'all' ? 'selected' : '' }}>All Status</option>
+                <option value="pending" {{ $status === 'pending' ? 'selected' : '' }}>Pending</option>
+                <option value="approved" {{ $status === 'approved' ? 'selected' : '' }}>Approved</option>
+                <option value="completed" {{ $status === 'completed' ? 'selected' : '' }}>Completed</option>
+                <option value="rejected" {{ $status === 'rejected' ? 'selected' : '' }}>Rejected</option>
             </select>
+
+            <button type="submit" class="inv-btn primary"><i class="fas fa-filter"></i> Apply Filter</button>
+
+            <a href="{{ route('user.share-transfer.index') }}" class="inv-btn outline">Reset</a>
 
         </form>
 
-    </div>
+        <div class="inv-table-wrap">
 
-    <div style="overflow-x:auto;">
+            <table class="inv-table">
 
-        <table class="transfer-table">
-
-            <thead>
-                <tr>
-                    <th>Request ID</th>
-                    <th>Request Type</th>
-                    <th>Project</th>
-                    <th>Share Reference</th>
-                    <th>Request Date</th>
-                    <th>Quantity</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-
-            <tbody>
-
-                @forelse($transfers as $transfer)
-
+                <thead>
                     <tr>
-                        <td>#{{ $transfer->id }}</td>
-                        <td>{{ ucfirst($transfer->type) }}</td>
-                        <td>{{ $transfer->project_name }}</td>
-                        <td>{{ $transfer->share_reference }}</td>
-                        <td>{{ $transfer->request_date }}</td>
-                        <td>{{ $transfer->quantity }}</td>
-                        <td>{{ ucfirst($transfer->status) }}</td>
+                        <th>Request ID</th>
+                        <th>Type</th>
+                        <th>Project</th>
+                        <th>Shares</th>
+                        <th>Date</th>
+                        <th>Status</th>
                     </tr>
+                </thead>
 
-                @empty
+                <tbody>
 
-                    <tr>
-                        <td colspan="7">
+                    @forelse($transfers as $transfer)
 
-                            <div class="transfer-empty">
+                        <tr>
+                            <td>#{{ $transfer->id }}</td>
+                            <td>{{ ucfirst($transfer->type ?? 'transfer') }}</td>
+                            <td>{{ $transfer->project->name ?? '—' }}</td>
+                            <td>{{ number_format($transfer->shares ?? 0) }}</td>
+                            <td>{{ optional($transfer->created_at)->format('d M Y') }}</td>
+                            <td>
+                                <span class="st-badge {{ $transfer->status }}">{{ ucfirst($transfer->status) }}</span>
+                            </td>
+                        </tr>
 
-                                <i class="fa-solid fa-right-left"></i>
+                    @empty
 
-                                <h3>No Transfer Records Found</h3>
+                        <tr>
+                            <td colspan="6">
+                                <div class="inv-empty">
+                                    <div class="icon"><i class="fas fa-right-left"></i></div>
+                                    <h4>No Transfer Records Found</h4>
+                                    <p>You don't have any share transfer records yet.</p>
+                                </div>
+                            </td>
+                        </tr>
 
-                                <p>
-                                    You don't have any share transfer or
-                                    resale records yet.
-                                </p>
+                    @endforelse
 
-                            </div>
+                </tbody>
 
-                        </td>
-                    </tr>
+            </table>
 
-                @endforelse
-
-            </tbody>
-
-        </table>
+        </div>
 
     </div>
 
-</div>
 
-{{-- Notice --}}
-<div class="transfer-notice">
-
-    <strong>
-        <i class="fa-solid fa-circle-info"></i>
-        Important Notice
-    </strong>
-
-    <p style="margin:8px 0 0;">
-        Share transfer and resale services are currently inactive.
-        No transfer, ownership change, sale or payment can be initiated
-        from this page. Such services require a verified business model,
-        applicable regulatory approvals and appropriate legal and
-        security arrangements.
-    </p>
+    <div class="inv-notice">
+        <i class="fas fa-info-circle"></i>
+        <div>
+            <h5>Important Notice</h5>
+            <p>
+                User-to-user share transfer is not active yet. No transfer or ownership change
+                can be initiated from this page.
+            </p>
+        </div>
+    </div>
 
 </div>
 

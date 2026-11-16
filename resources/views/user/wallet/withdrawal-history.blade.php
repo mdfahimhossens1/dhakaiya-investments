@@ -4,558 +4,149 @@
 
 @section('content')
 
-<div class="withdrawal-page">
+@include('user.wallet._styles')
 
-    {{-- Page Heading --}}
-    <div class="page-heading">
+@php
+    $currencyOptions = collect(['BDT', 'USD'])->merge($user->wallets()->pluck('currency'))->unique()->values();
+@endphp
+
+<div class="wl-page">
+
+    <div class="wl-head">
         <div>
             <h2>Withdrawal History</h2>
-            <p>View and track your wallet withdrawal records.</p>
+            <p>View and track your withdrawal requests.</p>
         </div>
-
-        <div class="breadcrumb">
-            <a href="{{ route('user.dashboard') }}">Dashboard</a>
-            <span>/</span>
-            <a href="{{ route('user.wallet.index') }}">My Wallet</a>
-            <span>/</span>
+        <div class="wl-crumb">
+            <a href="{{ route('user.dashboard') }}">Dashboard</a><span>/</span>
+            <a href="{{ route('user.wallet.index') }}">My Wallet</a><span>/</span>
             <span>Withdrawal History</span>
         </div>
     </div>
 
+    @include('user.wallet._flash')
 
-    {{-- Summary Cards --}}
-    <div class="summary-grid">
-
-        <div class="summary-card">
-            <div class="summary-icon green">
-                <i class="fas fa-wallet"></i>
-            </div>
+    <div class="wl-stats">
+        <div class="wl-stat">
+            <div class="ic"><i class="fas fa-wallet"></i></div>
+            <div><p>Total Requests</p><h3>{{ number_format($summary['total_withdrawals']) }}</h3><small>All withdrawal requests</small></div>
+        </div>
+        <div class="wl-stat">
+            <div class="ic orange"><i class="fas fa-clock"></i></div>
+            <div><p>Pending</p><h3>{{ number_format($summary['pending_withdrawals']) }}</h3><small>Amount is on hold</small></div>
+        </div>
+        <div class="wl-stat">
+            <div class="ic blue"><i class="fas fa-check-circle"></i></div>
             <div>
-                <p>Total Withdrawals</p>
-                <h3>{{ $summary['total_withdrawals'] }}</h3>
-                <span>Recorded withdrawals</span>
+                <p>Paid</p><h3>{{ number_format($summary['approved_withdrawals']) }}</h3>
+                @forelse($summary['amounts_by_currency'] as $cur => $total)
+                    <small>{{ \App\Support\Currency::symbol($cur) }} {{ number_format((float) $total, 2) }}</small>
+                @empty
+                    <small>Nothing paid yet</small>
+                @endforelse
             </div>
         </div>
-
-        <div class="summary-card">
-            <div class="summary-icon orange">
-                <i class="fas fa-clock"></i>
-            </div>
-            <div>
-                <p>Pending Requests</p>
-                <h3>{{ $summary['pending_withdrawals'] }}</h3>
-                <span>Awaiting processing</span>
-            </div>
+        <div class="wl-stat">
+            <div class="ic red"><i class="fas fa-times-circle"></i></div>
+            <div><p>Rejected</p><h3>{{ number_format($summary['rejected_withdrawals']) }}</h3><small>Refunded to wallet</small></div>
         </div>
-
-        <div class="summary-card">
-            <div class="summary-icon blue">
-                <i class="fas fa-check-circle"></i>
-            </div>
-            <div>
-                <p>Approved Requests</p>
-                <h3>{{ $summary['approved_withdrawals'] }}</h3>
-                <span>Approved records</span>
-            </div>
-        </div>
-
-        <div class="summary-card">
-            <div class="summary-icon red">
-                <i class="fas fa-times-circle"></i>
-            </div>
-            <div>
-                <p>Rejected Requests</p>
-                <h3>{{ $summary['rejected_withdrawals'] }}</h3>
-                <span>Rejected records</span>
-            </div>
-        </div>
-
     </div>
 
-
-    {{-- Withdrawal History --}}
-    <div class="content-card">
-
-        <div class="card-heading">
-
-            <div>
-                <h3>Withdrawal Transactions</h3>
-                <p>Your complete wallet withdrawal history.</p>
-            </div>
-
-            <span class="history-badge">
-                <i class="fas fa-history"></i>
-                History
-            </span>
-
+    <div class="wl-card">
+        <div class="wl-card-h">
+            <div><h3>Withdrawal Transactions</h3><p>Your complete withdrawal history.</p></div>
+            <a href="{{ route('user.withdraw') }}" class="wl-pill">+ New Withdrawal</a>
         </div>
 
-
-        {{-- Currency Filter --}}
-        <form method="GET"
-              action="{{ route('user.withdrawal-history.index') }}"
-              class="filter-form">
-
-            <div class="filter-group">
-
-                <label for="currency">Filter by Currency</label>
-
+        <form method="GET" action="{{ route('user.withdrawal-history.index') }}" class="wl-filter">
+            <div class="wl-field">
+                <label for="currency">Currency</label>
                 <select name="currency" id="currency">
-
-                    <option value="all"
-                        {{ $currency === 'all' ? 'selected' : '' }}>
-                        All Currencies
-                    </option>
-
-                    <option value="BDT"
-                        {{ $currency === 'BDT' ? 'selected' : '' }}>
-                        BDT - Bangladeshi Taka
-                    </option>
-
-                    <option value="USD"
-                        {{ $currency === 'USD' ? 'selected' : '' }}>
-                        USD - US Dollar
-                    </option>
-
+                    <option value="all" @selected($currency === 'all')>All Currencies</option>
+                    @foreach($currencyOptions as $c)
+                        <option value="{{ $c }}" @selected($currency === $c)>{{ $c }}</option>
+                    @endforeach
                 </select>
-
             </div>
-
-            <button type="submit" class="filter-btn">
-                <i class="fas fa-filter"></i>
-                Apply Filter
-            </button>
-
-            <a href="{{ route('user.withdrawal-history.index') }}"
-               class="reset-btn">
-                Reset
-            </a>
-
+            <div class="wl-field">
+                <label for="status">Status</label>
+                <select name="status" id="status">
+                    <option value="">All Status</option>
+                    @foreach(['pending', 'approved', 'rejected'] as $s)
+                        <option value="{{ $s }}" @selected(request('status') === $s)>{{ $s === 'approved' ? 'Paid' : ucfirst($s) }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <button type="submit" class="wl-btn primary"><i class="fas fa-filter"></i> Apply Filter</button>
+            <a href="{{ route('user.withdrawal-history.index') }}" class="wl-btn ghost">Reset</a>
         </form>
 
-
-        {{-- Table --}}
-        <div class="table-responsive">
-
-            <table class="withdrawal-table">
-
+        <div class="wl-table-wrap">
+            <table class="wl-table">
                 <thead>
-                    <tr>
-                        <th>Request ID</th>
-                        <th>Date</th>
-                        <th>Wallet</th>
-                        <th>Payment Method</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                        <th>Details</th>
-                    </tr>
+                    <tr><th>Request ID</th><th>Date</th><th>Wallet</th><th>Payment Method</th><th>Amount</th><th>You Receive</th><th>Status</th><th>Details</th></tr>
                 </thead>
-
                 <tbody>
-
-                    @forelse($withdrawals as $withdrawal)
-
+                    @forelse($withdrawals as $w)
+                        @php
+                            $sym = \App\Support\Currency::symbol($w->currency);
+                            $methodName = $w->paymentMethod?->name ?? strtoupper($w->method);
+                            $acc = (string) $w->account_number;
+                            $masked = strlen($acc) > 4 ? str_repeat('*', min(8, strlen($acc) - 4)) . substr($acc, -4) : $acc;
+                            $payload = [
+                                'title' => 'Withdrawal #WR-' . $w->id,
+                                'rows' => [
+                                    ['Status', $w->status === 'approved' ? 'Paid' : ucfirst($w->status)],
+                                    ['Method', $methodName],
+                                    ['Account Name', $w->account_name],
+                                    ['Account', $masked],
+                                    ['Bank', $w->bank_name],
+                                    ['Amount', $sym . ' ' . number_format((float) $w->amount, 2)],
+                                    ['Fee', $sym . ' ' . number_format((float) $w->fee, 2)],
+                                    ['You Receive', $sym . ' ' . number_format((float) $w->net_amount, 2)],
+                                    ['Payout Reference', $w->payout_reference],
+                                    ['Requested', $w->created_at->format('d M Y, h:i A')],
+                                    ['Processed', $w->reviewed_at?->format('d M Y, h:i A')],
+                                    ['Admin Note', $w->admin_note],
+                                ],
+                            ];
+                        @endphp
                         <tr>
-                            <td>{{ $withdrawal->request_id }}</td>
-
-                            <td>
-                                {{ $withdrawal->created_at->format('d M Y') }}
-                            </td>
-
-                            <td>{{ $withdrawal->currency }}</td>
-
-                            <td>{{ $withdrawal->payment_method }}</td>
-
-                            <td>
-                                {{ $withdrawal->currency === 'BDT' ? '৳' : '$' }}
-                                {{ number_format($withdrawal->amount, 2) }}
-                            </td>
-
-                            <td>
-                                {{ ucfirst($withdrawal->status) }}
-                            </td>
-
-                            <td>
-                                <span class="detail-badge">View</span>
-                            </td>
+                            <td>#WR-{{ $w->id }}</td>
+                            <td>{{ $w->created_at->format('d M Y') }}<small>{{ $w->created_at->format('h:i A') }}</small></td>
+                            <td>{{ $w->currency }}</td>
+                            <td>{{ $methodName }}<small>{{ $masked }}</small></td>
+                            <td>{{ $sym }} {{ number_format((float) $w->amount, 2) }}</td>
+                            <td><strong>{{ $sym }} {{ number_format((float) $w->net_amount, 2) }}</strong></td>
+                            <td><span class="wl-badge {{ $w->status }}">{{ $w->status === 'approved' ? 'Paid' : ucfirst($w->status) }}</span></td>
+                            <td><button type="button" class="wl-view" data-d="{{ json_encode($payload) }}" onclick="wlOpen(this)">View</button></td>
                         </tr>
-
                     @empty
-
-                        <tr>
-                            <td colspan="7">
-
-                                <div class="empty-state">
-
-                                    <div class="empty-icon">
-                                        <i class="fas fa-wallet"></i>
-                                    </div>
-
-                                    <h4>No Withdrawal Records Found</h4>
-
-                                    <p>
-                                        Your withdrawal history will appear here
-                                        when withdrawal services become available.
-                                    </p>
-
-                                </div>
-
-                            </td>
-                        </tr>
-
+                        <tr><td colspan="8">
+                            <div class="wl-empty">
+                                <div class="ic"><i class="fas fa-wallet"></i></div>
+                                <h4>No Withdrawal Records Found</h4>
+                                <p>Your withdrawal requests will appear here. <a href="{{ route('user.withdraw') }}">Request a withdrawal</a></p>
+                            </div>
+                        </td></tr>
                     @endforelse
-
                 </tbody>
-
             </table>
-
         </div>
 
+        @if($withdrawals->hasPages())<div class="wl-pg">{{ $withdrawals->links() }}</div>@endif
     </div>
 
-
-    {{-- Information Notice --}}
-    <div class="notice-card">
-
-        <div class="notice-icon">
-            <i class="fas fa-shield-alt"></i>
-        </div>
-
+    <div class="wl-notice">
+        <i class="fas fa-shield-alt"></i>
         <div>
             <h4>Withdrawal Information</h4>
-
-            <p>
-                This page currently displays an empty withdrawal history.
-                Withdrawal services will require appropriate payment-provider
-                integration, identity verification, security controls and
-                applicable regulatory approval before activation.
-            </p>
+            <p>When you request a withdrawal, the amount is held from your wallet immediately. After our team sends the money, the request is marked <strong>Paid</strong>. If a request is rejected, the full amount returns to your wallet.</p>
         </div>
-
     </div>
 
 </div>
 
-
-<style>
-
-.withdrawal-page {
-    width: 100%;
-}
-
-.page-heading {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 15px;
-    margin-bottom: 25px;
-}
-
-.page-heading h2 {
-    font-size: 23px;
-    font-weight: 700;
-    color: var(--text);
-    margin: 0 0 6px;
-}
-
-.page-heading p {
-    color: var(--muted);
-    font-size: 13px;
-    margin: 0;
-}
-
-.breadcrumb {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 9px;
-    font-size: 12px;
-    color: var(--muted);
-}
-
-.breadcrumb a {
-    color: var(--primary);
-    text-decoration: none;
-}
-
-.summary-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    margin-bottom: 22px;
-}
-
-.summary-card {
-    background: var(--white);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 18px;
-    display: flex;
-    align-items: center;
-    gap: 13px;
-}
-
-.summary-icon {
-    min-width: 43px;
-    width: 43px;
-    height: 43px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 17px;
-}
-
-.summary-icon.green {
-    background: #e7f6ef;
-    color: #087f5b;
-}
-
-.summary-icon.orange {
-    background: #fff2e6;
-    color: #e58b32;
-}
-
-.summary-icon.blue {
-    background: #eaf2ff;
-    color: #3478db;
-}
-
-.summary-icon.red {
-    background: #feecec;
-    color: #dc4545;
-}
-
-.summary-card p {
-    color: var(--muted);
-    font-size: 11px;
-    margin: 0 0 5px;
-}
-
-.summary-card h3 {
-    font-size: 15px;
-    margin: 0 0 4px;
-    color: var(--text);
-}
-
-.summary-card span {
-    color: var(--muted);
-    font-size: 10px;
-}
-
-.content-card {
-    background: var(--white);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 22px;
-    margin-bottom: 20px;
-}
-
-.card-heading {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 22px;
-}
-
-.card-heading h3 {
-    color: var(--text);
-    font-size: 16px;
-    margin: 0 0 5px;
-}
-
-.card-heading p {
-    color: var(--muted);
-    font-size: 12px;
-    margin: 0;
-}
-
-.history-badge {
-    background: #e7f6ef;
-    color: #087f5b;
-    padding: 8px 12px;
-    border-radius: 20px;
-    font-size: 11px;
-}
-
-.filter-form {
-    display: flex;
-    align-items: flex-end;
-    gap: 12px;
-    flex-wrap: wrap;
-    background: #f8fafc;
-    padding: 16px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-}
-
-.filter-group {
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
-    min-width: 240px;
-}
-
-.filter-group label {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text);
-}
-
-.filter-group select {
-    height: 40px;
-    padding: 0 12px;
-    border: 1px solid var(--border);
-    border-radius: 7px;
-    background: white;
-    color: var(--text);
-    font-size: 12px;
-    outline: none;
-}
-
-.filter-btn,
-.reset-btn {
-    height: 40px;
-    padding: 0 16px;
-    border: none;
-    border-radius: 7px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 7px;
-    font-size: 12px;
-    text-decoration: none;
-    cursor: pointer;
-}
-
-.filter-btn {
-    background: var(--primary);
-    color: white;
-}
-
-.reset-btn {
-    background: #e9eef2;
-    color: #475569;
-}
-
-.table-responsive {
-    width: 100%;
-    overflow-x: auto;
-}
-
-.withdrawal-table {
-    width: 100%;
-    min-width: 750px;
-    border-collapse: collapse;
-}
-
-.withdrawal-table th,
-.withdrawal-table td {
-    padding: 14px;
-    text-align: left;
-    border-bottom: 1px solid var(--border);
-    font-size: 12px;
-}
-
-.withdrawal-table th {
-    background: #f8fafc;
-    color: #64748b;
-    font-weight: 600;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 40px 15px;
-}
-
-.empty-icon {
-    width: 55px;
-    height: 55px;
-    border-radius: 50%;
-    background: #f1f5f9;
-    color: #94a3b8;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 21px;
-    margin: 0 auto 13px;
-}
-
-.empty-state h4 {
-    font-size: 14px;
-    color: var(--text);
-    margin: 0 0 7px;
-}
-
-.empty-state p {
-    color: var(--muted);
-    font-size: 11px;
-    margin: 0;
-}
-
-.detail-badge {
-    background: #e7f6ef;
-    color: #087f5b;
-    padding: 5px 10px;
-    border-radius: 15px;
-}
-
-.notice-card {
-    display: flex;
-    gap: 14px;
-    padding: 18px;
-    background: #eff6ff;
-    border: 1px solid #dbeafe;
-    border-radius: 11px;
-    margin-bottom: 20px;
-}
-
-.notice-icon {
-    color: #2563eb;
-    font-size: 21px;
-}
-
-.notice-card h4 {
-    font-size: 13px;
-    color: #1e40af;
-    margin: 0 0 6px;
-}
-
-.notice-card p {
-    font-size: 11px;
-    line-height: 1.7;
-    color: #475569;
-    margin: 0;
-}
-
-@media(max-width: 1100px) {
-    .summary-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media(max-width: 600px) {
-    .summary-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .content-card {
-        padding: 16px;
-    }
-
-    .filter-group {
-        width: 100%;
-        min-width: 100%;
-    }
-
-    .filter-btn,
-    .reset-btn {
-        flex: 1;
-    }
-}
-
-</style>
+@include('user.wallet._modal')
 
 @endsection
