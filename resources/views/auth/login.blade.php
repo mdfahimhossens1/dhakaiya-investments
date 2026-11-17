@@ -5,6 +5,26 @@
 @push('styles')
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/css/intlTelInput.css">
+
+    <style>
+        .forgot-password-link {
+            text-align: right;
+            margin: -5px 0 20px;
+        }
+
+        .forgot-password-link a {
+            color: #d6ad62;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .forgot-password-link a:hover {
+            color: #f0d49c;
+            text-decoration: underline;
+        }
+    </style>
 @endpush
 
 @section('content')
@@ -70,6 +90,13 @@
             </div>
         </div>
 
+        {{-- Forgot Password --}}
+        <div class="forgot-password-link">
+            <a href="{{ route('password.request') }}">
+                Forgot Password?
+            </a>
+        </div>
+
         <button type="submit" class="auth-button" id="loginButton">
             Login
         </button>
@@ -133,7 +160,6 @@
 
                 try {
 
-                    // Wait until phone validation utilities are loaded.
                     await iti.promise;
 
                     if (!iti.isValidNumber()) {
