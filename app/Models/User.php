@@ -183,5 +183,18 @@ public function referralCommissions(): HasMany
     return $this->hasMany(ReferralCommission::class, 'user_id');
 }
 
+public function isAgent(): bool
+{
+    return $this->role === 'agent';
+}
 
+public function agent(): HasOne
+{
+    return $this->hasOne(Agent::class);
+}
+
+public function researchRequests(): HasMany
+{
+    return $this->hasMany(ResearchRequest::class);
+}
 }

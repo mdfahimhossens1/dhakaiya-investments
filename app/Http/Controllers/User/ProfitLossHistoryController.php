@@ -3,80 +3,84 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
+use App\Models\PositionRank;
+use App\Models\UserPosition;
+use App\Services\ShareService;
 use Illuminate\Http\Request;
 
 class ProfitLossHistoryController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request, ShareService $shares)
     {
         $user = auth()->user();
 
-        $type = $request->query('type', 'all');
+        $profits = $user->dailyProfitLogs()
+            ->with('project:id,name,slug')
+            ->when($request->filled('from'), fn ($q) => $q->whereDate('profit_date', '>=', $request->query('from')))
+            ->when($request->filled('to'), fn ($q) => $q->whereDate('profit_date', '<=', $request->query('to')))
+            ->latest('profit_date')
+            ->paginate(10)
+            ->withQueryString();
 
-        if (!in_array($type, ['all', 'profit', 'loss'], true)) {
-            $type = 'all';
+        $totalByCurrency = $user->dailyProfitLogs()
+            ->selectRaw('wallet_currency, SUM(wallet_amount) as total')
+            ->groupBy('wallet_currency')
+            ->pluck('total', 'wallet_currency');
+
+        // এখনকার শেয়ার থেকে প্রতিদিন কত আসবে (পরের রাতে যোগ হবে, শুধু যে শেয়ার পুরো দিন ধরা থাকবে)
+        $boost = '0';
+        $rankId = UserPosition::where('user_id', $user->id)->value('position_rank_id');
+
+        if ($rankId) {
+            $boost = (string) (PositionRank::where('id', $rankId)->where('status', true)->value('profit_boost_percent') ?? 0);
         }
 
-        // ১) প্রতিদিনের প্রফিট (Wallet-এ জমা হওয়া)
-        $dailyRows = $user->dailyProfitLogs()
-            ->with('project:id,name')
-            ->latest('profit_date')
-            ->limit(200)
-            ->get()
-            ->map(fn ($l) => (object) [
-                'id' => 'D' . $l->id,
-                'project_name' => $l->project->name ?? '—',
-                'record_date' => \Illuminate\Support\Carbon::parse($l->profit_date)->format('d M Y'),
-                'sort' => \Illuminate\Support\Carbon::parse($l->profit_date)->timestamp,
-                'type' => 'profit',
-                'description' => 'Daily profit',
-                'amount' => (float) $l->profit_bdt,
-            ]);
+        $expectedRows = [];
+        $expected = '0.00';
 
-        // ২) শেয়ার রিসেল করে লাভ/ক্ষতি
-        $resaleRows = $user->shareOrders()
-            ->where('type', 'sell')
-            ->where('status', '!=', 'rejected')
-            ->with('project:id,name')
-            ->latest()
-            ->limit(200)
-            ->get()
-            ->map(fn ($o) => (object) [
-                'id' => 'S' . $o->id,
-                'project_name' => $o->project->name ?? '—',
-                'record_date' => $o->created_at->format('d M Y'),
-                'sort' => $o->created_at->timestamp,
-                'type' => (float) $o->profit_loss_bdt >= 0 ? 'profit' : 'loss',
-                'description' => 'Resale of ' . $o->shares . ' share(s)',
-                'amount' => abs((float) $o->profit_loss_bdt),
-            ]);
+        foreach ($user->shareHoldings()->where('shares', '>', 0)->with('project')->get() as $h) {
+            $p = $h->project;
 
-        $all = $dailyRows->concat($resaleRows)->sortByDesc('sort')->values();
+            if (! $p || ! $p->is_active || $p->status !== 'active' || bccomp((string) $p->daily_profit_percent, '0', 3) <= 0) {
+                continue;
+            }
 
-        $records = $type === 'all' ? $all : $all->where('type', $type)->values();
+            $daily = bcdiv(bcmul(bcmul((string) $p->share_price, (string) $h->shares, 2), (string) $p->daily_profit_percent, 6), '100', 2);
 
-        // সারাংশ সব রেকর্ড থেকে (ফিল্টারের উপর নির্ভর করে না)
-        $totalProfit = (float) $user->dailyProfitLogs()->sum('profit_bdt')
-            + (float) $user->shareOrders()->where('type', 'sell')->where('status', '!=', 'rejected')
-                ->where('profit_loss_bdt', '>', 0)->sum('profit_loss_bdt');
+            if (bccomp($boost, '0', 2) > 0) {
+                $daily = bcdiv(bcmul($daily, bcadd('100', $boost, 2), 6), '100', 2);
+            }
 
-        $totalLoss = abs((float) $user->shareOrders()->where('type', 'sell')->where('status', '!=', 'rejected')
-            ->where('profit_loss_bdt', '<', 0)->sum('profit_loss_bdt'));
+            $expected = bcadd($expected, $daily, 2);
+            $expectedRows[] = (object) [
+                'project' => $p->name,
+                'shares' => $h->shares,
+                'percent' => $p->daily_profit_percent,
+                'daily_bdt' => $daily,
+                'since' => $h->updated_at,
+            ];
+        }
+
+        $home = $shares->home($user);
+        $currency = $user->walletCurrency();
+        $expectedLocal = $home ? bcdiv($expected, $home['rate'], 2) : null;
 
         $summary = [
-            'total_profit' => $totalProfit,
-            'total_loss' => $totalLoss,
-            'net_result' => $totalProfit - $totalLoss,
-            'total_records' => $all->count(),
-            'profit_records' => $all->where('type', 'profit')->count(),
-            'loss_records' => $all->where('type', 'loss')->count(),
+            'total_profit_bdt' => $user->dailyProfitLogs()->sum('profit_bdt'),
+            'this_month_bdt' => $user->dailyProfitLogs()
+                ->whereYear('profit_date', now()->year)
+                ->whereMonth('profit_date', now()->month)
+                ->sum('profit_bdt'),
+            'last_profit_date' => $user->dailyProfitLogs()->max('profit_date'),
+            'last_profit_bdt' => $user->dailyProfitLogs()
+                ->whereDate('profit_date', $user->dailyProfitLogs()->max('profit_date'))->sum('profit_bdt'),
+            'resale_profit_loss_bdt' => $user->shareOrders()->where('type', 'sell')->sum('profit_loss_bdt'),
+            'by_currency' => $totalByCurrency,
         ];
 
         return view('user.investment.profit-loss-history', compact(
-            'user',
-            'records',
-            'summary',
-            'type'
+            'user', 'profits', 'summary', 'totalByCurrency',
+            'expected', 'expectedLocal', 'expectedRows', 'currency', 'boost'
         ));
     }
 }

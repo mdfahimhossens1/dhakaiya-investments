@@ -94,6 +94,7 @@ class AnnouncementController extends Controller
                 'date',
                 'after_or_equal:start_at',
             ],
+            
         ]);
 
         $validated['is_dismissible'] = $request->boolean(

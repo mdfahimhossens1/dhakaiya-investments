@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Models\PaymentMethod;
 use App\Models\WithdrawRequest;
 use App\Services\WalletService;
 use Illuminate\Http\Request;
@@ -13,7 +14,7 @@ class WithdrawRequestController extends Controller
 {
     public function index(Request $request)
     {
-        $requests = WithdrawRequest::with(['user', 'reviewer'])
+        $requests = WithdrawRequest::with(['user', 'reviewer', 'paymentMethod'])
             ->when(
                 in_array($request->status, ['pending', 'approved', 'rejected'], true),
                 fn ($q) => $q->where('status', $request->status)
@@ -49,12 +50,17 @@ class WithdrawRequestController extends Controller
 
         $rejectedCount = WithdrawRequest::where('status', 'rejected')->count();
 
+        $methods = PaymentMethod::orderBy('name')->get(['code', 'name']);
+        $currencies = WithdrawRequest::select('currency')->distinct()->orderBy('currency')->pluck('currency');
+
         return view('super-admin.withdraw-requests.index', compact(
             'requests',
             'pendingCount',
             'pendingByCurrency',
             'paidTodayByCurrency',
-            'rejectedCount'
+            'rejectedCount',
+            'methods',
+            'currencies'
         ));
     }
 
@@ -81,10 +87,10 @@ class WithdrawRequestController extends Controller
             return back()->with('error', 'এই অনুরোধ আগেই প্রসেস করা হয়েছে।');
         }
 
-        return back()->with('success', 'Withdraw approved।');
+        return back()->with('success', 'Withdraw approved (Paid)।');
     }
 
-    /** Reject করলে hold করা টাকা Wallet-এ ফেরত যাবে */
+    /** Reject করলে hold করা টাকা ইউজারের আয়ের (Withdrawable) অংশে ফেরত যাবে */
     public function reject(Request $request, WithdrawRequest $withdrawRequest, WalletService $wallets)
     {
         $data = $request->validate([

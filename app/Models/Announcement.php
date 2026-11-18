@@ -9,6 +9,9 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
     'title',
     'message',
     'type',
+    'placement',
+    'image_path',
+    'link_url',
     'status',
     'is_dismissible',
     'start_at',
@@ -38,4 +41,11 @@ class Announcement extends Model
                     ->orWhere('end_at', '>=', now());
             });
     }
+
+    public function getImageUrlAttribute(): ?string
+{
+    return $this->image_path ? asset('storage/' . $this->image_path) : null;
+}
+
+
 }

@@ -14,8 +14,9 @@ return [
     ],
 
     'withdraw' => [
-        'min' => ['default' => 1, 'BDT' => 200, 'USD' => 5],
-        'fee_percent' => 0,
+        'min' => ['default' => 1, 'BDT' => 500, 'USD' => 5],
+        'interval_days' => 10,
         'max_pending' => 3,
     ],
+    
 ];

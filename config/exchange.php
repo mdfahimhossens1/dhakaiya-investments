@@ -9,9 +9,10 @@ $codes = [
 
 return [
     // 1 unit = কত BDT। .env-এ RATE_INR_BDT=... এভাবে বসান। খালি থাকলে ওই কারেন্সি বন্ধ।
-    'rates' => ['BDT' => 1] + collect($codes)
-        ->mapWithKeys(fn ($c) => [$c => env("RATE_{$c}_BDT")])
-        ->all(),
+    'rates' => ['BDT' => 1],
 
     'sell_fee_percent' => env('SHARE_SELL_FEE_PERCENT', 0),
+    'convert_fee_percent' => env('CONVERT_FEE_PERCENT', 0),
+    'convert_min' => env('CONVERT_MIN', 1),
+    'profit_autorun' => env('PROFIT_AUTORUN', false),
 ];

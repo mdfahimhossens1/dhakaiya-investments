@@ -33,6 +33,12 @@ use App\Http\Controllers\User\TopPerformersController;
 use App\Http\Controllers\User\ReferralController;
 use App\Http\Controllers\User\MyPositionController;
 use App\Http\Controllers\User\SupportController;
+use App\Http\Controllers\User\LocalAgentController;
+use App\Http\Controllers\User\ResearchRequestController as UserResearchRequestController;
+use App\Http\Controllers\User\WalletConvertController;
+use App\Http\Controllers\User\DashboardController as UserDashboardController;
+use App\Http\Controllers\User\IncomeHistoryController;
+
 use App\Http\Controllers\SuperAdmin\CompanyController;
 use App\Http\Controllers\SuperAdmin\UserManagementController;
 use App\Http\Controllers\SuperAdmin\PlanController;
@@ -61,6 +67,18 @@ use App\Http\Controllers\SuperAdmin\DepositRequestController;
 use App\Http\Controllers\SuperAdmin\WithdrawRequestController;
 use App\Http\Controllers\SuperAdmin\InvestmentReportController;
 use App\Http\Controllers\SuperAdmin\PaymentMethodController;
+use App\Http\Controllers\SuperAdmin\AgentController as SuperAdminAgentController;
+use App\Http\Controllers\SuperAdmin\AgentLocationController;
+use App\Http\Controllers\SuperAdmin\AgentResearchController;
+use App\Http\Controllers\SuperAdmin\AgentPerformanceController;
+use App\Http\Controllers\SuperAdmin\CurrencyRateController;
+use App\Http\Controllers\SuperAdmin\ProfitDistributionController;
+
+use App\Http\Controllers\Agent\DashboardController as AgentDashboardController;
+use App\Http\Controllers\Agent\ProfileController as AgentProfileController;
+use App\Http\Controllers\Agent\RequestController as AgentRequestController;
+use App\Http\Controllers\Agent\MessageController as AgentMessageController;
+
 
 Route::get('/', function () {
 
@@ -82,6 +100,7 @@ Route::middleware('auth')->group(function () {
         return match ($user->role) {
             'super_admin' => redirect()->route('super-admin.dashboard'),
             'admin' => redirect()->route('admin.dashboard'),
+            'agent'       => redirect()->route('agent.dashboard'),
             'user' => redirect()->route('user.dashboard'),
             default => abort(403, 'Invalid user role.'),
         };
@@ -367,7 +386,80 @@ Route::prefix('payment-methods')
         Route::delete('/{paymentMethod}', 'destroy')->name('destroy');
     });
 
+// ===== Agent Management =====
+Route::prefix('agents')->name('agents.')->controller(SuperAdminAgentController::class)->group(function () {
+    Route::get('/', 'index')->name('index');
+    Route::get('/create', 'create')->name('create');
+    Route::post('/', 'store')->name('store');
+    Route::get('/{agent}', 'show')->name('show');
+    Route::get('/{agent}/edit', 'edit')->name('edit');
+    Route::put('/{agent}', 'update')->name('update');
+    Route::patch('/{agent}/verify', 'toggleVerify')->name('verify');
+    Route::patch('/{agent}/approval', 'approval')->name('approval');
+    Route::patch('/{agent}/status', 'toggleStatus')->name('status');
+});
+
+Route::prefix('agent-locations')->name('agent-locations.')->controller(AgentLocationController::class)->group(function () {
+    Route::get('/', 'index')->name('index');
+    Route::post('/countries', 'storeCountry')->name('countries.store');
+    Route::put('/countries/{country}', 'updateCountry')->name('countries.update');
+    Route::delete('/countries/{country}', 'destroyCountry')->name('countries.destroy');
+    Route::post('/districts', 'storeDistrict')->name('districts.store');
+    Route::put('/districts/{district}', 'updateDistrict')->name('districts.update');
+    Route::delete('/districts/{district}', 'destroyDistrict')->name('districts.destroy');
+});
+
+Route::controller(AgentResearchController::class)->group(function () {
+    Route::get('/research-requests', 'index')->name('research-requests.index');
+    Route::get('/research-requests/{researchRequest}', 'show')->name('research-requests.show');
+    Route::get('/research-requests/{researchRequest}/report', 'download')->name('research-requests.download');
+    Route::get('/research-reports', 'reports')->name('research-reports.index');
+});
+
+Route::get('/agent-performance', [AgentPerformanceController::class, 'index'])->name('agent-performance.index');
+
+Route::get('/currency-rates', [CurrencyRateController::class, 'index'])->name('currency-rates.index');
+Route::put('/currency-rates', [CurrencyRateController::class, 'update'])->name('currency-rates.update');
+Route::get('/profit-distribution', [ProfitDistributionController::class, 'index'])->name('profit-distribution.index');
+Route::post('/profit-distribution', [ProfitDistributionController::class, 'run'])->name('profit-distribution.run');
+
         });
+
+// Agent Routes
+Route::middleware('role:agent')
+    ->prefix('agent')
+    ->name('agent.')
+    ->group(function () {
+
+        Route::get('/dashboard', [AgentDashboardController::class, 'index'])->name('dashboard');
+
+        Route::get('/profile', [AgentProfileController::class, 'index'])->name('profile.index');
+        Route::put('/profile', [AgentProfileController::class, 'update'])->name('profile.update');
+        Route::patch('/availability', [AgentProfileController::class, 'toggleAvailability'])->name('availability');
+
+        Route::post('/payment-methods', [AgentProfileController::class, 'storePaymentMethod'])
+            ->middleware('throttle:10,1')->name('payment-methods.store');
+        Route::patch('/payment-methods/{paymentMethod}/toggle', [AgentProfileController::class, 'togglePaymentMethod'])
+            ->name('payment-methods.toggle');
+        Route::delete('/payment-methods/{paymentMethod}', [AgentProfileController::class, 'destroyPaymentMethod'])
+            ->name('payment-methods.destroy');
+
+        Route::prefix('requests')->name('requests.')->controller(AgentRequestController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/{researchRequest}', 'show')->name('show');
+            Route::post('/{researchRequest}/quote', 'quote')->name('quote');
+            Route::patch('/{researchRequest}/reject', 'reject')->name('reject');
+            Route::patch('/{researchRequest}/confirm-payment', 'confirmPayment')->name('confirm-payment');
+            Route::post('/{researchRequest}/report', 'submitReport')->name('report');
+            Route::get('/{researchRequest}/report', 'download')->name('download');
+        });
+
+        Route::prefix('messages')->name('messages.')->controller(AgentMessageController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/{user}', 'show')->name('show');
+            Route::post('/{user}', 'store')->middleware('throttle:30,1')->name('store');
+        });
+    });
 
 
     // Admin Routes
@@ -389,9 +481,7 @@ Route::prefix('payment-methods')
         ->name('user.')
         ->group(function () {
 
-            Route::get('/dashboard', function () {
-                return view('user.dashboard');
-            })->name('dashboard');
+            Route::get('/dashboard', [UserDashboardController::class, 'index'])->name('dashboard');
             Route::get('/account-summary', [AccountSummaryController::class, 'index'])
             ->name('account-summary');
 
@@ -492,6 +582,8 @@ Route::get('/project-wise-records', [ProjectWiseRecordController::class, 'index'
     Route::get('/maturity-information', [MaturityInformationController::class, 'index'])
     ->name('maturity-information.index');
 
+        Route::get('/income-history', [IncomeHistoryController::class, 'index'])->name('income-history.index');
+
             Route::get('/rewards', [RewardController::class, 'index'])
     ->name('rewards.index');
 
@@ -555,6 +647,28 @@ Route::post('/deposit', [WalletController::class, 'storeDeposit'])
 Route::post('/withdraw', [WalletController::class, 'storeWithdraw'])
     ->middleware('throttle:10,1')
     ->name('withdraw.store');
+
+// Local Agents
+Route::prefix('local-agents')->name('agents.')->controller(LocalAgentController::class)->group(function () {
+    Route::get('/', 'index')->name('index');
+    Route::get('/{agent}/messages', 'messages')->name('messages');
+    Route::post('/{agent}/messages', 'sendMessage')->middleware('throttle:30,1')->name('messages.send');
+});
+
+Route::prefix('research-requests')->name('research.')->controller(UserResearchRequestController::class)->group(function () {
+    Route::get('/', 'index')->name('index');
+    Route::get('/create/{agent}', 'create')->name('create');
+    Route::post('/{agent}', 'store')->middleware('throttle:10,1')->name('store');
+    Route::get('/{researchRequest}', 'show')->name('show');
+    Route::patch('/{researchRequest}/accept', 'accept')->name('accept');
+    Route::patch('/{researchRequest}/cancel', 'cancel')->name('cancel');
+    Route::patch('/{researchRequest}/payment', 'submitPayment')->name('payment');
+    Route::get('/{researchRequest}/report', 'downloadReport')->name('download');
+});
+
+Route::get('/wallet/convert', [WalletConvertController::class, 'create'])->name('wallet.convert');
+Route::post('/wallet/convert', [WalletConvertController::class, 'store'])
+    ->middleware('throttle:10,1')->name('wallet.convert.store');
 
         });
 

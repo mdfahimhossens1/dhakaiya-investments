@@ -23,11 +23,12 @@
     <div class="wl-hero">
         <div>
             <h2>💳 My Wallet</h2>
-            <p>Deposits are credited after admin verification. Withdrawals are sent to your saved accounts.</p>
+            <p>Deposits are credited after admin verification. Only your earnings can be withdrawn, to your saved accounts.</p>
         </div>
         <div class="wl-hero-actions">
             <a href="{{ route('user.deposit') }}">+ Deposit</a>
             <a href="{{ route('user.withdraw') }}" class="alt">Withdraw</a>
+            <a href="{{ route('user.wallet.convert') }}" class="alt">Convert</a>
         </div>
     </div>
 
@@ -69,10 +70,16 @@
                 <h3>{{ $w['name'] }}</h3>
                 <p>{{ $w['description'] }}</p>
 
-                <div class="wl-bal-l">AVAILABLE BALANCE</div>
+                <div class="wl-bal-l">TOTAL BALANCE</div>
                 <div class="wl-bal"><span>{{ $w['symbol'] }}</span>{{ number_format((float) $w['balance'], 2) }}</div>
-
+@if($w['usd_equivalent'] !== null)
+    <div style="margin:-12px 0 16px;font-size:12px;color:var(--muted)">≈ $ {{ number_format((float) $w['usd_equivalent'], 2) }} USD</div>
+@elseif($w['currency'] !== 'USD')
+    <div style="margin:-12px 0 16px;font-size:11px;color:var(--muted)">USD rate not set</div>
+@endif
                 <div class="wl-mini">
+                    <div><span>Withdrawable (Earnings)</span><strong class="wl-pos">{{ $w['symbol'] }} {{ number_format((float) $w['withdrawable'], 2) }}</strong></div>
+                    <div><span>Locked (Deposit + Resale)</span><strong>{{ $w['symbol'] }} {{ number_format((float) $w['principal'], 2) }}</strong></div>
                     <div><span>Total Deposited</span><strong>{{ $w['symbol'] }} {{ number_format((float) $w['total_deposit'], 2) }}</strong></div>
                     <div><span>Total Withdrawn</span><strong>{{ $w['symbol'] }} {{ number_format((float) $w['total_withdraw'], 2) }}</strong></div>
                     <div><span>Pending Withdrawal</span><strong>{{ $w['symbol'] }} {{ number_format((float) $w['pending_withdraw'], 2) }}</strong></div>
@@ -125,8 +132,8 @@
     <div class="wl-notice">
         <i class="fas fa-shield-alt"></i>
         <div>
-            <h4>Wallet Security Notice</h4>
-            <p>Never share your password, PIN or OTP with anyone. Our team will never ask for them. Always send money only to the account shown on the Deposit page.</p>
+            <h4>How your balance works</h4>
+            <p><strong>Locked</strong> money (deposits and share resale) can be used to buy shares but cannot be withdrawn. <strong>Withdrawable</strong> money (daily profit, referral commission, rewards) can be withdrawn. Never share your password, PIN or OTP with anyone.</p>
         </div>
     </div>
 

@@ -11,6 +11,12 @@ use RuntimeException;
 
 class WalletService
 {
+    /** এই ধরনের credit তোলার মতো আয়ের অংশে যায়। বাকি সব (deposit, share_sell) Principal-এ */
+    private const WITHDRAWABLE_CREDITS = ['daily_profit', 'referral_commission', 'reward', 'withdraw_refund'];
+
+    /**
+     * meta['bucket'] = 'earnings' | 'locked' দিলে type-এর নিয়ম বদলে ওই অংশেই কাজ হয় (কনভার্সনের জন্য)
+     */
     public function credit(
         User $user,
         string $type,
@@ -62,27 +68,57 @@ class WalletService
         ) {
             Wallet::firstOrCreate(
                 ['user_id' => $user->id, 'currency' => $currency],
-                ['balance' => 0]
+                ['balance' => 0, 'withdrawable_balance' => 0]
             );
 
-            // Race condition ঠেকাতে row lock
             $wallet = Wallet::where('user_id', $user->id)
                 ->where('currency', $currency)
                 ->lockForUpdate()
                 ->first();
 
             $current = (string) $wallet->balance;
+            $withdrawable = (string) $wallet->withdrawable_balance;
+            $bucket = $meta['bucket'] ?? null;
 
             if ($direction === 'debit') {
                 if (bccomp($current, $amount, 2) < 0) {
                     throw new RuntimeException('Insufficient wallet balance.');
                 }
+
+                $principal = bcsub($current, $withdrawable, 2);
+
+                if ($type === 'withdraw' || $bucket === 'earnings') {
+                    if (bccomp($withdrawable, $amount, 2) < 0) {
+                        throw new RuntimeException('Insufficient withdrawable balance.');
+                    }
+
+                    $withdrawable = bcsub($withdrawable, $amount, 2);
+                } elseif ($bucket === 'locked') {
+                    if (bccomp($principal, $amount, 2) < 0) {
+                        throw new RuntimeException('Insufficient locked balance.');
+                    }
+                } elseif (bccomp($amount, $principal, 2) > 0) {
+                    // শেয়ার কেনা ইত্যাদি: আগে Principal, বাকিটা আয় থেকে
+                    $withdrawable = bcsub($withdrawable, bcsub($amount, $principal, 2), 2);
+                }
+
                 $newBalance = bcsub($current, $amount, 2);
             } else {
                 $newBalance = bcadd($current, $amount, 2);
+
+                $toWithdrawable = $bucket !== null
+                    ? $bucket === 'earnings'
+                    : (in_array($type, self::WITHDRAWABLE_CREDITS, true) || (($meta['withdrawable'] ?? false) === true));
+
+                if ($toWithdrawable) {
+                    $withdrawable = bcadd($withdrawable, $amount, 2);
+                }
             }
 
-            $wallet->update(['balance' => $newBalance]);
+            $wallet->update([
+                'balance' => $newBalance,
+                'withdrawable_balance' => $withdrawable,
+            ]);
 
             return WalletTransaction::create([
                 'wallet_id' => $wallet->id,

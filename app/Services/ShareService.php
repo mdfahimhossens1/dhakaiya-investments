@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Project;
 use App\Models\ShareHolding;
 use App\Models\ShareOrder;
+use App\Models\CurrencyRate;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -15,7 +16,7 @@ class ShareService
     {
     }
 
-    /** 1 unit কারেন্সি = কত BDT। রেট না থাকলে null */
+       /** 1 unit কারেন্সি = কত BDT। আগে Admin-এর DB, না থাকলে .env। কোনোটাই না থাকলে null */
     public function rate(string $currency): ?string
     {
         $currency = strtoupper($currency);
@@ -24,13 +25,26 @@ class ShareService
             return '1';
         }
 
-        $rate = config("exchange.rates.$currency");
+        $rate = CurrencyRate::rateFor($currency) ?? config("exchange.rates.$currency");
 
         if ($rate === null || $rate === '' || (float) $rate <= 0) {
             return null;
         }
 
         return (string) $rate;
+    }
+
+    /** এক কারেন্সির অঙ্ক অন্য কারেন্সিতে (নিচে ছাঁটা)। rate না থাকলে null */
+    public function convertAmount(string $amount, string $from, string $to): ?string
+    {
+        $rf = $this->rate($from);
+        $rt = $this->rate($to);
+
+        if (! $rf || ! $rt) {
+            return null;
+        }
+
+        return bcdiv(bcmul($amount, $rf, 8), $rt, 2);
     }
 
     /** ওই প্রজেক্টে ১টা শেয়ারের দাম নির্দিষ্ট কারেন্সিতে (দেখানোর জন্য, উপরে রাউন্ড) */

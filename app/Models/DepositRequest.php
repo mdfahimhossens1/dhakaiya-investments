@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class DepositRequest extends Model
 {
     protected $fillable = [
-        'user_id', 'method', 'currency', 'amount', 'approved_amount',
+        'user_id', 'payment_method_id', 'method', 'currency', 'amount', 'approved_amount',
         'sender_number', 'transaction_id', 'screenshot', 'status',
         'admin_note', 'reviewed_by', 'reviewed_at',
     ];
@@ -30,6 +30,11 @@ class DepositRequest extends Model
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    public function paymentMethod(): BelongsTo
+    {
+        return $this->belongsTo(PaymentMethod::class, 'payment_method_id');
     }
 
     public function scopePending($q)

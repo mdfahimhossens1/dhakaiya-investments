@@ -4,6 +4,7 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\DepositRequest;
+use App\Models\PaymentMethod;
 use App\Services\WalletService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,7 @@ class DepositRequestController extends Controller
 {
     public function index(Request $request)
     {
-        $requests = DepositRequest::with(['user', 'reviewer'])
+        $requests = DepositRequest::with(['user', 'reviewer', 'paymentMethod'])
             ->when(
                 in_array($request->status, ['pending', 'approved', 'rejected'], true),
                 fn ($q) => $q->where('status', $request->status)
@@ -36,7 +37,6 @@ class DepositRequestController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        // কারেন্সি মিশিয়ে যোগ করা অর্থহীন, তাই কারেন্সি-ভিত্তিক
         $pendingCount = DepositRequest::pending()->count();
 
         $pendingByCurrency = DepositRequest::pending()
@@ -52,12 +52,17 @@ class DepositRequestController extends Controller
 
         $rejectedCount = DepositRequest::where('status', 'rejected')->count();
 
+        $methods = PaymentMethod::orderBy('name')->get(['code', 'name']);
+        $currencies = DepositRequest::select('currency')->distinct()->orderBy('currency')->pluck('currency');
+
         return view('super-admin.deposit-requests.index', compact(
             'requests',
             'pendingCount',
             'pendingByCurrency',
             'approvedTodayByCurrency',
-            'rejectedCount'
+            'rejectedCount',
+            'methods',
+            'currencies'
         ));
     }
 
@@ -89,6 +94,7 @@ class DepositRequestController extends Controller
                     'reviewed_at' => now(),
                 ]);
 
+                // Deposit যায় Locked (Principal) অংশে, তোলা যায় না
                 $wallets->credit(
                     $deposit->user,
                     'deposit',
