@@ -5,6 +5,7 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\DepositRequest;
 use App\Models\PaymentMethod;
+use App\Support\Notify;
 use App\Services\WalletService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -66,74 +67,93 @@ class DepositRequestController extends Controller
         ));
     }
 
-    public function approve(Request $request, DepositRequest $depositRequest, WalletService $wallets)
-    {
-        $data = $request->validate([
-            'approved_amount' => ['nullable', 'numeric', 'gt:0', 'max:10000000', 'decimal:0,2'],
-            'admin_note' => ['nullable', 'string', 'max:500'],
-        ]);
+   public function approve(Request $request, DepositRequest $depositRequest, WalletService $wallets)
+{
+    $data = $request->validate([
+        'approved_amount' => ['nullable', 'numeric', 'gt:0', 'max:10000000', 'decimal:0,2'],
+        'admin_note' => ['nullable', 'string', 'max:500'],
+    ]);
 
-        try {
-            DB::transaction(function () use ($depositRequest, $data, $wallets) {
-                // ডবল approve ঠেকাতে row lock
-                $deposit = DepositRequest::whereKey($depositRequest->id)
-                    ->lockForUpdate()
-                    ->firstOrFail();
+    try {
+        DB::transaction(function () use ($depositRequest, $data, $wallets) {
+            $deposit = DepositRequest::whereKey($depositRequest->id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-                if ($deposit->status !== 'pending') {
-                    throw new RuntimeException('এই অনুরোধ আগেই প্রসেস করা হয়েছে।');
-                }
+            if ($deposit->status !== 'pending') {
+                throw new RuntimeException('এই অনুরোধ আগেই প্রসেস করা হয়েছে।');
+            }
 
-                $amount = $data['approved_amount'] ?? $deposit->amount;
+            $amount = $data['approved_amount'] ?? $deposit->amount;
 
-                $deposit->update([
-                    'status' => 'approved',
-                    'approved_amount' => $amount,
-                    'admin_note' => $data['admin_note'] ?? null,
-                    'reviewed_by' => auth()->id(),
-                    'reviewed_at' => now(),
-                ]);
-
-                // Deposit যায় Locked (Principal) অংশে, তোলা যায় না
-                $wallets->credit(
-                    $deposit->user,
-                    'deposit',
-                    $amount,
-                    $deposit,
-                    'Deposit via ' . strtoupper($deposit->method) . ' (TrxID: ' . $deposit->transaction_id . ')',
-                    [],
-                    $deposit->currency
-                );
-            });
-        } catch (RuntimeException $e) {
-            return back()->with('error', $e->getMessage());
-        }
-
-        return back()->with('success', 'Deposit approved এবং Wallet-এ ব্যালেন্স যোগ হয়েছে।');
-    }
-
-    public function reject(Request $request, DepositRequest $depositRequest)
-    {
-        $data = $request->validate([
-            'admin_note' => ['required', 'string', 'max:500'],
-        ]);
-
-        $updated = DepositRequest::whereKey($depositRequest->id)
-            ->where('status', 'pending')
-            ->update([
-                'status' => 'rejected',
-                'admin_note' => $data['admin_note'],
+            $deposit->update([
+                'status' => 'approved',
+                'approved_amount' => $amount,
+                'admin_note' => $data['admin_note'] ?? null,
                 'reviewed_by' => auth()->id(),
                 'reviewed_at' => now(),
-                'updated_at' => now(),
             ]);
 
-        if (! $updated) {
-            return back()->with('error', 'এই অনুরোধ আগেই প্রসেস করা হয়েছে।');
-        }
-
-        return back()->with('success', 'Deposit rejected.');
+            $wallets->credit(
+                $deposit->user,
+                'deposit',
+                $amount,
+                $deposit,
+                'Deposit via ' . strtoupper($deposit->method) . ' (TrxID: ' . $deposit->transaction_id . ')',
+                [],
+                $deposit->currency
+            );
+        });
+    } catch (RuntimeException $e) {
+        return back()->with('error', $e->getMessage());
     }
+
+    // Transaction commit hoyar por notification
+    $depositRequest->refresh();
+
+    Notify::user(
+        $depositRequest->user,
+        'Deposit Approved',
+        'Your deposit of ' . Notify::money($depositRequest->approved_amount, $depositRequest->currency)
+            . ' has been approved and added to your wallet.',
+        'success'
+    );
+
+    return back()->with('success', 'Deposit approved এবং Wallet-এ ব্যালেন্স যোগ হয়েছে।');
+}
+
+public function reject(Request $request, DepositRequest $depositRequest)
+{
+    $data = $request->validate([
+        'admin_note' => ['required', 'string', 'max:500'],
+    ]);
+
+    $updated = DepositRequest::whereKey($depositRequest->id)
+        ->where('status', 'pending')
+        ->update([
+            'status' => 'rejected',
+            'admin_note' => $data['admin_note'],
+            'reviewed_by' => auth()->id(),
+            'reviewed_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+    if (! $updated) {
+        return back()->with('error', 'এই অনুরোধ আগেই প্রসেস করা হয়েছে।');
+    }
+
+    $depositRequest->refresh();
+
+    Notify::user(
+        $depositRequest->user,
+        'Deposit Rejected',
+        'Your deposit of ' . Notify::money($depositRequest->amount, $depositRequest->currency)
+            . ' was rejected. Reason: ' . $data['admin_note'],
+        'danger'
+    );
+
+    return back()->with('success', 'Deposit rejected.');
+}
 
     /** private স্ক্রিনশট দেখা (শুধু Super Admin) */
     public function screenshot(DepositRequest $depositRequest)

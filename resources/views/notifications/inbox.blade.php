@@ -19,12 +19,23 @@
             <p>Stay updated with your account activities and important updates.</p>
         </div>
 
-        @if($unreadCount > 0)
-            <form action="{{ route($routes['read_all']) }}" method="POST">
-                @csrf
-                <button type="submit" class="mark-all-btn">✓ Mark All as Read</button>
-            </form>
-        @endif
+<div style="display:flex;gap:10px;flex-wrap:wrap">
+    @if($unreadCount > 0)
+        <form action="{{ route($routes['read_all']) }}" method="POST">
+            @csrf
+            <button type="submit" class="mark-all-btn">✓ Mark All as Read</button>
+        </form>
+    @endif
+
+    @if($totalCount > 0)
+        <form action="{{ route($routes['clear']) }}" method="POST"
+              onsubmit="return confirm('Clear all notifications? This cannot be undone.')">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="mark-all-btn clear-all-btn">🗑 Clear All</button>
+        </form>
+    @endif
+</div>
     </div>
 
     <div class="notification-stats">
@@ -147,6 +158,8 @@
 
 @push('styles')
 <style>
+    .clear-all-btn { border-color: #fecdd3; background: #fff1f2; color: #e11d48; }
+.clear-all-btn:hover { background: #e11d48; color: #fff; }
     /* ===== apnar user notifications blade er style block ekdom same ===== */
 </style>
 @endpush

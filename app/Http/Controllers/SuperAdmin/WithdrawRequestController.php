@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PaymentMethod;
 use App\Models\WithdrawRequest;
 use App\Services\WalletService;
+use App\Support\Notify;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -65,69 +66,88 @@ class WithdrawRequestController extends Controller
     }
 
     /** Admin ম্যানুয়ালি টাকা পাঠানোর পর Approve (Wallet আগেই কাটা, তাই ব্যালেন্স বদলায় না) */
-    public function approve(Request $request, WithdrawRequest $withdrawRequest)
-    {
-        $data = $request->validate([
-            'payout_reference' => ['required', 'string', 'max:100'],
-            'admin_note' => ['nullable', 'string', 'max:500'],
+   public function approve(Request $request, WithdrawRequest $withdrawRequest)
+{
+    $data = $request->validate([
+        'payout_reference' => ['required', 'string', 'max:100'],
+        'admin_note' => ['nullable', 'string', 'max:500'],
+    ]);
+
+    $updated = WithdrawRequest::whereKey($withdrawRequest->id)
+        ->where('status', 'pending')
+        ->update([
+            'status' => 'approved',
+            'payout_reference' => $data['payout_reference'],
+            'admin_note' => $data['admin_note'] ?? null,
+            'reviewed_by' => auth()->id(),
+            'reviewed_at' => now(),
+            'updated_at' => now(),
         ]);
 
-        $updated = WithdrawRequest::whereKey($withdrawRequest->id)
-            ->where('status', 'pending')
-            ->update([
-                'status' => 'approved',
-                'payout_reference' => $data['payout_reference'],
-                'admin_note' => $data['admin_note'] ?? null,
+    if (! $updated) {
+        return back()->with('error', 'এই অনুরোধ আগেই প্রসেস করা হয়েছে।');
+    }
+
+    $withdrawRequest->refresh();
+
+    Notify::user(
+        $withdrawRequest->user,
+        'Withdraw Approved',
+        'Your withdrawal of ' . Notify::money($withdrawRequest->net_amount, $withdrawRequest->currency)
+            . ' has been paid. Reference: ' . $data['payout_reference'],
+        'success'
+    );
+
+    return back()->with('success', 'Withdraw approved (Paid)।');
+}
+
+public function reject(Request $request, WithdrawRequest $withdrawRequest, WalletService $wallets)
+{
+    $data = $request->validate([
+        'admin_note' => ['required', 'string', 'max:500'],
+    ]);
+
+    try {
+        DB::transaction(function () use ($withdrawRequest, $data, $wallets) {
+            $withdraw = WithdrawRequest::whereKey($withdrawRequest->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($withdraw->status !== 'pending') {
+                throw new RuntimeException('এই অনুরোধ আগেই প্রসেস করা হয়েছে।');
+            }
+
+            $withdraw->update([
+                'status' => 'rejected',
+                'admin_note' => $data['admin_note'],
                 'reviewed_by' => auth()->id(),
                 'reviewed_at' => now(),
-                'updated_at' => now(),
             ]);
 
-        if (! $updated) {
-            return back()->with('error', 'এই অনুরোধ আগেই প্রসেস করা হয়েছে।');
-        }
-
-        return back()->with('success', 'Withdraw approved (Paid)।');
+            $wallets->credit(
+                $withdraw->user,
+                'withdraw_refund',
+                $withdraw->amount,
+                $withdraw,
+                'Withdraw #' . $withdraw->id . ' rejected, refunded',
+                [],
+                $withdraw->currency
+            );
+        });
+    } catch (RuntimeException $e) {
+        return back()->with('error', $e->getMessage());
     }
 
-    /** Reject করলে hold করা টাকা ইউজারের আয়ের (Withdrawable) অংশে ফেরত যাবে */
-    public function reject(Request $request, WithdrawRequest $withdrawRequest, WalletService $wallets)
-    {
-        $data = $request->validate([
-            'admin_note' => ['required', 'string', 'max:500'],
-        ]);
+    $withdrawRequest->refresh();
 
-        try {
-            DB::transaction(function () use ($withdrawRequest, $data, $wallets) {
-                $withdraw = WithdrawRequest::whereKey($withdrawRequest->id)
-                    ->lockForUpdate()
-                    ->firstOrFail();
+    Notify::user(
+        $withdrawRequest->user,
+        'Withdraw Rejected',
+        'Your withdrawal of ' . Notify::money($withdrawRequest->amount, $withdrawRequest->currency)
+            . ' was rejected and refunded to your wallet. Reason: ' . $data['admin_note'],
+        'danger'
+    );
 
-                if ($withdraw->status !== 'pending') {
-                    throw new RuntimeException('এই অনুরোধ আগেই প্রসেস করা হয়েছে।');
-                }
-
-                $withdraw->update([
-                    'status' => 'rejected',
-                    'admin_note' => $data['admin_note'],
-                    'reviewed_by' => auth()->id(),
-                    'reviewed_at' => now(),
-                ]);
-
-                $wallets->credit(
-                    $withdraw->user,
-                    'withdraw_refund',
-                    $withdraw->amount,
-                    $withdraw,
-                    'Withdraw #' . $withdraw->id . ' rejected, refunded',
-                    [],
-                    $withdraw->currency
-                );
-            });
-        } catch (RuntimeException $e) {
-            return back()->with('error', $e->getMessage());
-        }
-
-        return back()->with('success', 'Withdraw rejected এবং টাকা ইউজারের Wallet-এ ফেরত গেছে।');
-    }
+    return back()->with('success', 'Withdraw rejected এবং টাকা ইউজারের Wallet-এ ফেরত গেছে।');
+}
 }

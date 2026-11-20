@@ -259,7 +259,7 @@ class DistributeDailyProfit extends Command
             return ['profit_bdt' => $profitBdt];
         }
 
-        try {
+               try {
             DB::transaction(function () use (
                 $holding, $user, $project, $date, $eligible, $price, $percent,
                 $profitBdt, $currency, $rate, $walletAmount, $wallets
@@ -288,6 +288,15 @@ class DistributeDailyProfit extends Command
         } catch (UniqueConstraintViolationException) {
             return 'duplicate';
         }
+
+        // Profit dewar por user ke notification
+        Notify::user(
+            $user,
+            'Daily Profit Received',
+            'You received ' . Notify::money($walletAmount, $currency)
+                . " profit from {$project->name} ({$eligible} shares) for " . $date->format('d M Y') . '.',
+            'success'
+        );
 
         return ['profit_bdt' => $profitBdt];
     }

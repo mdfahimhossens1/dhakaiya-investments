@@ -97,18 +97,19 @@ foreach ([
     ['uri' => 'agent/notifications', 'name' => 'agent.notifications.'],
     ['uri' => 'super-admin/inbox',  'name' => 'super-admin.inbox.'],
 ] as $cfg) {
-    Route::middleware('auth')                 // apnar role middleware thakle ekhane jog korun
+    Route::middleware('auth')
         ->prefix($cfg['uri'])
         ->name($cfg['name'])
         ->group(function () {
             Route::get('/', [NotificationInboxController::class, 'index'])->name('index');
+            Route::post('seen', [NotificationInboxController::class, 'markSeen'])->name('seen');
             Route::post('read-all', [NotificationInboxController::class, 'markAllAsRead'])->name('read-all');
+            Route::delete('clear', [NotificationInboxController::class, 'clear'])->name('clear');
             Route::post('{id}/read', [NotificationInboxController::class, 'markAsRead'])->name('read');
             Route::get('{id}/open', [NotificationInboxController::class, 'open'])->name('open');
             Route::delete('{id}', [NotificationInboxController::class, 'destroy'])->name('destroy');
         });
 }
-
 
 Route::middleware('auth')->group(function () {
 

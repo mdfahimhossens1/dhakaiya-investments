@@ -20,6 +20,14 @@ class NotificationInboxController extends Controller
         ));
     }
 
+    /** Bell khulle JS eta call kore, sob unread read hoye jay (JSON response). */
+    public function markSeen()
+    {
+        auth()->user()->unreadNotifications()->update(['read_at' => now()]);
+
+        return response()->json(['ok' => true]);
+    }
+
     public function markAsRead(string $id)
     {
         auth()->user()->notifications()->where('id', $id)->firstOrFail()->markAsRead();
@@ -34,9 +42,15 @@ class NotificationInboxController extends Controller
         return back()->with('success', 'All notifications marked as read.');
     }
 
-    /**
-     * Mark as read, then go to the notification link.
-     */
+    /** Sob notification delete (clear all). */
+    public function clear()
+    {
+        auth()->user()->notifications()->delete();
+
+        return back()->with('success', 'All notifications cleared.');
+    }
+
+    /** Read mark kore link e pathay. */
     public function open(string $id)
     {
         $user = auth()->user();
