@@ -7,16 +7,35 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class NotificationBroadcast extends Model
 {
-    public const TYPES = ['info' => 'Information', 'success' => 'Success', 'warning' => 'Warning', 'important' => 'Important'];
-
-    public const AUDIENCES = [
-        'all_users'  => 'All investors (users)',
-        'all_admins' => 'All admins',
-        'everyone'   => 'Everyone',
-        'specific'   => 'One specific user',
+    public const TYPES = [
+        'info'    => 'Info',
+        'success' => 'Success',
+        'warning' => 'Warning',
+        'danger'  => 'Important',
     ];
 
-    protected $fillable = ['title', 'message', 'type', 'audience', 'target_user_id', 'action_url', 'recipients_count', 'sent_by'];
+    public const AUDIENCES = [
+        'all_users'  => 'All Users',
+        'all_agents' => 'All Agents',
+        'all_admins' => 'All Admins',
+        'everyone'   => 'Everyone',
+        'specific'   => 'Specific User',
+    ];
+
+    protected $fillable = [
+        'title',
+        'message',
+        'type',
+        'audience',
+        'target_user_id',
+        'action_url',
+        'recipients_count',
+        'sent_by',
+    ];
+
+    protected $casts = [
+        'recipients_count' => 'integer',
+    ];
 
     public function sender(): BelongsTo
     {

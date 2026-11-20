@@ -138,7 +138,6 @@
             if (rows.length > 1) {
                 btn.closest('.pm-row').remove();
             } else {
-                // Last row: faka kore dao (id-o), save e delete hobe
                 rows[0].querySelectorAll('input[type=text]').forEach(i => i.value = '');
                 rows[0].querySelector('input[type=hidden]').value = '';
             }

@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SuperAdmin\AdminController;
+use App\Http\Controllers\NotificationInboxController;
 use App\Http\Controllers\User\AccountSummaryController;
 use App\Http\Controllers\User\NotificationController;
 use App\Http\Controllers\User\PersonalInformationController;
@@ -89,6 +90,25 @@ Route::get('/', function () {
     return view('welcome');
 
 })->name('home');
+
+/* ---- Inbox: user, agent, super admin (each has its own URL + route names) ---- */
+foreach ([
+    ['uri' => 'user/notifications', 'name' => 'user.notifications.'],
+    ['uri' => 'agent/notifications', 'name' => 'agent.notifications.'],
+    ['uri' => 'super-admin/inbox',  'name' => 'super-admin.inbox.'],
+] as $cfg) {
+    Route::middleware('auth')                 // apnar role middleware thakle ekhane jog korun
+        ->prefix($cfg['uri'])
+        ->name($cfg['name'])
+        ->group(function () {
+            Route::get('/', [NotificationInboxController::class, 'index'])->name('index');
+            Route::post('read-all', [NotificationInboxController::class, 'markAllAsRead'])->name('read-all');
+            Route::post('{id}/read', [NotificationInboxController::class, 'markAsRead'])->name('read');
+            Route::get('{id}/open', [NotificationInboxController::class, 'open'])->name('open');
+            Route::delete('{id}', [NotificationInboxController::class, 'destroy'])->name('destroy');
+        });
+}
+
 
 Route::middleware('auth')->group(function () {
 

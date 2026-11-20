@@ -26,6 +26,7 @@ class NotificationBroadcastController extends Controller
 
         $audienceCounts = [
             'all_users'  => User::where('role', 'user')->count(),
+            'all_agents' => User::where('role', 'agent')->count(),
             'all_admins' => User::whereIn('role', ['admin', 'super_admin'])->count(),
             'everyone'   => User::count(),
         ];
@@ -49,7 +50,7 @@ class NotificationBroadcastController extends Controller
             'type'         => 'required|in:' . implode(',', array_keys(NotificationBroadcast::TYPES)),
             'audience'     => 'required|in:' . implode(',', array_keys(NotificationBroadcast::AUDIENCES)),
             'target_email' => 'required_if:audience,specific|nullable|email|exists:users,email',
-            'action_url'   => ['nullable', 'string', 'max:255', 'regex:/^(\/|https?:\/\/)/'],
+            'action_url'   => ['nullable', 'string', 'max:255', 'regex:/^(\/(?!\/)|https?:\/\/)/'],
         ], [
             'action_url.regex'         => 'The link must start with / (internal page) or http(s)://',
             'target_email.exists'      => 'No user found with that email address.',
@@ -58,6 +59,7 @@ class NotificationBroadcastController extends Controller
 
         $recipients = match ($data['audience']) {
             'all_users'  => User::where('role', 'user'),
+            'all_agents' => User::where('role', 'agent'),
             'all_admins' => User::whereIn('role', ['admin', 'super_admin']),
             'everyone'   => User::query(),
             'specific'   => User::where('email', $data['target_email']),
@@ -74,14 +76,20 @@ class NotificationBroadcastController extends Controller
             'message'          => $data['message'],
             'type'             => $data['type'],
             'audience'         => $data['audience'],
-            'target_user_id'   => $data['audience'] === 'specific' ? User::where('email', $data['target_email'])->value('id') : null,
+            'target_user_id'   => $data['audience'] === 'specific'
+                ? User::where('email', $data['target_email'])->value('id')
+                : null,
             'action_url'       => $data['action_url'] ?? null,
             'recipients_count' => $count,
             'sent_by'          => auth()->id(),
         ]);
 
         $notification = new AdminNotification(
-            $data['title'], $data['message'], $data['type'], $data['action_url'] ?? null, $broadcast->id
+            $data['title'],
+            $data['message'],
+            $data['type'],
+            $data['action_url'] ?? null,
+            $broadcast->id
         );
 
         $recipients->chunkById(200, fn ($users) => Notification::send($users, $notification));

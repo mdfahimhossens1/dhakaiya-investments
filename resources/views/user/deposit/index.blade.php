@@ -16,6 +16,7 @@
             <p>Send money to our account, then submit the transaction details. Your wallet is credited after verification.</p>
         </div>
         <div class="wl-hero-actions">
+            <a href="{{ route('user.agents.index') }}"><i class="fas fa-user-tie"></i> Research Agents</a>
             <a href="{{ route('user.deposit-history.index') }}">Deposit History</a>
             <a href="{{ route('user.wallet.index') }}" class="alt">My Wallet</a>
         </div>
@@ -157,6 +158,15 @@
         <div>
             <h4>How deposits work</h4>
             <p>Our team checks your Transaction ID against the received payment. After approval the amount appears in your {{ $currency }} wallet. Duplicate Transaction IDs are rejected automatically.</p>
+        </div>
+    </div>
+
+    <div class="wl-notice">
+        <i class="fas fa-user-tie"></i>
+        <div>
+            <h4>Local agents are for research only</h4>
+            <p>You can message a local agent and ask them to research for you. Agents never receive deposits or hold your money, so always send your deposit only to the account shown above.</p>
+            <p style="margin-top:6px"><a href="{{ route('user.agents.index') }}" style="font-weight:700">Browse research agents &rarr;</a></p>
         </div>
     </div>
 

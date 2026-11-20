@@ -225,6 +225,7 @@ class Currency
     $c = strtoupper(trim((string) $country));
 
     return $c === 'BANGLADESH' ? 'BD' : $c;
+    return \App\Support\Phone::iso2($country);
 }
 
 public static function symbol(?string $code): string
@@ -239,5 +240,6 @@ public static function symbol(?string $code): string
 
     return $code;
 }
+
 
 }

@@ -2,6 +2,7 @@
 @section('title', 'Messages')
 @section('content')
 
+<div class="agent-page">
 <div class="page-heading">
     <div><h2>Messages</h2><p>Conversations with users.</p></div>
 </div>
@@ -30,5 +31,6 @@
     @empty
         <div class="ag-empty"><i class="fa-regular fa-comments"></i>No conversations yet. Users will message you from the agent list.</div>
     @endforelse
+</div>
 </div>
 @endsection

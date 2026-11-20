@@ -2,8 +2,12 @@
 @section('title', 'My Profile')
 @section('content')
 
+<div class="agent-page">
 <div class="page-heading">
-    <div><h2>My Profile</h2><p>Contact details, assigned areas and payment methods.</p></div>
+    <div>
+        <h2>My Profile</h2>
+        <p>Contact details, assigned areas and payment methods.</p>
+    </div>
 </div>
 
 @include('partials.agent-styles')
@@ -13,15 +17,29 @@
 
     <div class="ag-grid ag-g2">
         <div class="ag-panel">
-            <div class="ag-head"><div><h3>Profile</h3><p>Email: {{ $agent->user->email }}</p></div></div>
+            <div class="ag-head">
+                <div><h3>Profile</h3><p>Email: {{ $agent->user->email }}</p></div>
+            </div>
             <form method="POST" action="{{ route('agent.profile.update') }}">
                 @csrf @method('PUT')
-                <div class="ag-field"><label>Name *</label><input type="text" name="name" value="{{ old('name', $agent->user->name) }}" required></div>
-                <div class="ag-row">
-                    <div class="ag-field"><label>Phone *</label><input type="text" name="phone" value="{{ old('phone', $agent->phone) }}" required></div>
-                    <div class="ag-field"><label>WhatsApp</label><input type="text" name="whatsapp" value="{{ old('whatsapp', $agent->whatsapp) }}"></div>
+                <div class="ag-field">
+                    <label>Name *</label>
+                    <input type="text" name="name" value="{{ old('name', $agent->user->name) }}" required>
                 </div>
-                <div class="ag-field"><label>Bio</label><textarea name="bio" maxlength="1000">{{ old('bio', $agent->bio) }}</textarea></div>
+                <div class="ag-row">
+                    <div class="ag-field">
+                        <label>Phone *</label>
+                        <input type="text" name="phone" value="{{ old('phone', $agent->phone) }}" required>
+                    </div>
+                    <div class="ag-field">
+                        <label>WhatsApp</label>
+                        <input type="text" name="whatsapp" value="{{ old('whatsapp', $agent->whatsapp) }}">
+                    </div>
+                </div>
+                <div class="ag-field">
+                    <label>Bio</label>
+                    <textarea name="bio" maxlength="1000">{{ old('bio', $agent->bio) }}</textarea>
+                </div>
                 <button class="ag-btn">Save Profile</button>
             </form>
         </div>
@@ -29,11 +47,14 @@
         <div class="ag-panel">
             <div class="ag-head">
                 <div><h3>Availability &amp; Areas</h3><p>Areas are assigned by the admin.</p></div>
-                <form method="POST" action="{{ route('agent.availability') }}">@csrf @method('PATCH')
-                    <button class="ag-btn sm {{ $agent->is_available ? 'ghost' : '' }}">{{ $agent->is_available ? 'Go unavailable' : 'Go available' }}</button>
+                <form method="POST" action="{{ route('agent.availability') }}">
+                    @csrf @method('PATCH')
+                    <button class="ag-btn sm {{ $agent->is_available ? 'ghost' : '' }}">
+                        {{ $agent->is_available ? 'Go unavailable' : 'Go available' }}
+                    </button>
                 </form>
             </div>
-            <p>
+            <p style="margin:0 0 14px;">
                 <span class="ag-badge {{ $agent->is_verified ? 'blue' : 'gray' }}">{{ $agent->is_verified ? 'Verified' : 'Not verified' }}</span>
                 <span class="ag-badge {{ $agent->is_available ? 'teal' : 'gray' }}">{{ $agent->is_available ? 'Available' : 'Unavailable' }}</span>
             </p>
@@ -47,7 +68,10 @@
 
     <div class="ag-panel">
         <div class="ag-head">
-            <div><h3>Payment Methods</h3><p>Shown to a user only after they accept your quote. Use these for the <strong>research fee</strong> only.</p></div>
+            <div>
+                <h3>Payment Methods</h3>
+                <p>Shown to a user only after they accept your quote. Use these for the <strong>research fee</strong> only.</p>
+            </div>
         </div>
 
         @if($agent->paymentMethods->count())
@@ -61,10 +85,12 @@
                             <td>{{ $pm->account_number }}<small>{{ $pm->account_name }}</small></td>
                             <td><span class="ag-badge {{ $pm->is_active ? 'green' : 'gray' }}">{{ $pm->is_active ? 'Active' : 'Off' }}</span></td>
                             <td class="num">
-                                <form method="POST" action="{{ route('agent.payment-methods.toggle', $pm) }}" style="display:inline;">@csrf @method('PATCH')
+                                <form method="POST" action="{{ route('agent.payment-methods.toggle', $pm) }}" style="display:inline;">
+                                    @csrf @method('PATCH')
                                     <button class="ag-btn ghost sm">{{ $pm->is_active ? 'Turn off' : 'Turn on' }}</button>
                                 </form>
-                                <form method="POST" action="{{ route('agent.payment-methods.destroy', $pm) }}" style="display:inline;" onsubmit="return confirm('Remove this method?')">@csrf @method('DELETE')
+                                <form method="POST" action="{{ route('agent.payment-methods.destroy', $pm) }}" style="display:inline;" onsubmit="return confirm('Remove this method?')">
+                                    @csrf @method('DELETE')
                                     <button class="ag-btn danger sm">Remove</button>
                                 </form>
                             </td>
@@ -81,7 +107,9 @@
                 <div class="ag-field">
                     <label>Method *</label>
                     <select name="method" required>
-                        @foreach(\App\Models\AgentPaymentMethod::METHODS as $k => $label)<option value="{{ $k }}" @selected(old('method') === $k)>{{ $label }}</option>@endforeach
+                        @foreach(\App\Models\AgentPaymentMethod::METHODS as $k => $label)
+                            <option value="{{ $k }}" @selected(old('method') === $k)>{{ $label }}</option>
+                        @endforeach
                     </select>
                 </div>
                 <div class="ag-field"><label>Account name *</label><input type="text" name="account_name" value="{{ old('account_name') }}" required></div>
@@ -94,5 +122,6 @@
             <button class="ag-btn"><i class="fa-solid fa-plus"></i> Add Payment Method</button>
         </form>
     </div>
+</div>
 </div>
 @endsection

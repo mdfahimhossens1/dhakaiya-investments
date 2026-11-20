@@ -73,11 +73,20 @@
 <div class="stats-grid stats-grid-4">
 
     <div class="stat-card">
-        <div class="stat-top"><span>Total Profit Earned</span><div class="stat-icon green">৳</div></div>
-        <h2>৳ {{ number_format((float) $profit['total'], 2) }}</h2>
+        <div class="stat-top"><span>Credited Today</span><div class="stat-icon green">৳</div></div>
+        <h2>৳ {{ number_format((float) $profit['credited_today'], 2) }}</h2>
         <p>
-            @forelse($profit['by_currency'] as $cur => $t){{ \App\Support\Currency::symbol($cur) }} {{ number_format((float) $t, 2) }} {{ $cur }}@if(! $loop->last) · @endif
-            @empty No profit received yet @endforelse
+            @forelse($profit['credited_today_local'] as $cur => $t){{ \App\Support\Currency::symbol($cur) }} {{ number_format((float) $t, 2) }} {{ $cur }}@if(! $loop->last) · @endif
+            @empty Nothing credited yet today @endforelse
+        </p>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-top"><span>Earning Today</span><div class="stat-icon purple">◔</div></div>
+        <h2>৳ {{ number_format((float) $accruing, 2) }}</h2>
+        <p>
+            Added to your wallet after midnight
+            @if(bccomp($boost, '0', 2) > 0) · incl. +{{ rtrim(rtrim($boost, '0'), '.') }}% rank boost @endif
         </p>
     </div>
 
@@ -87,25 +96,18 @@
         <p>
             @if($profit['last_date'])
                 Last: {{ \Illuminate\Support\Carbon::parse($profit['last_date'])->format('d M') }} · ৳ {{ number_format((float) $profit['last'], 2) }}
-            @else
-                Waiting for first profit
-            @endif
+            @else Waiting for first profit @endif
         </p>
     </div>
 
     <div class="stat-card">
-        <div class="stat-top"><span>Expected Per Day</span><div class="stat-icon purple">◔</div></div>
-        <h2>৳ {{ number_format((float) $expected, 2) }}</h2>
+        <div class="stat-top"><span>Total Profit Earned</span><div class="stat-icon green">◈</div></div>
+        <h2>৳ {{ number_format((float) $profit['total'], 2) }}</h2>
         <p>
-            @if(bccomp($boost, '0', 2) > 0)incl. +{{ rtrim(rtrim($boost, '0'), '.') }}% rank boost · @endif
-            from your current shares
+            @forelse($profit['by_currency'] as $cur => $t){{ \App\Support\Currency::symbol($cur) }} {{ number_format((float) $t, 2) }} {{ $cur }}@if(! $loop->last) · @endif
+            @empty No profit received yet @endforelse
+            · <a href="{{ route('user.profit-loss-history.index') }}">History →</a>
         </p>
-    </div>
-
-    <div class="stat-card">
-        <div class="stat-top"><span>My Shares Value</span><div class="stat-icon green">◈</div></div>
-        <h2>৳ {{ number_format((float) $totalInvested, 2) }}</h2>
-        <p><a href="{{ route('user.profit-loss-history.index') }}">View profit history →</a></p>
     </div>
 
 </div>

@@ -110,23 +110,23 @@
 
 <body>
 
-    <div class="app-wrapper">
+<div class="app-wrapper">
 
-        @include('partials.sidebar')
+    @include('partials.sidebar')
 
-        <div class="main-content">
+    <div class="main-content">
 
-            @include('partials.header')
+        @include('partials.header')
 
-            <main class="page-content">
-                @yield('content')
-            </main>
+        <main class="page-content">
+            @yield('content')
+        </main>
 
-            @include('partials.footer')
-
-        </div>
+        @include('partials.footer')
 
     </div>
+
+</div>
 
     @stack('scripts')
 

@@ -2,6 +2,7 @@
 @section('title', 'Chat with ' . $user->name)
 @section('content')
 
+<div class="agent-page">
 <div class="page-heading">
     <div><h2>{{ $user->name }}</h2><p>Conversation with user.</p></div>
     <a href="{{ route('agent.messages.index') }}" class="ag-btn ghost">Back</a>
@@ -31,5 +32,6 @@
             <div class="ag-empty" style="padding:20px;">No requests yet.</div>
         @endforelse
     </div>
+</div>
 </div>
 @endsection

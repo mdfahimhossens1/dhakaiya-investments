@@ -14,8 +14,8 @@
     <div class="ag-grid ag-g4">
         <div class="ag-card ag-stat"><div class="ag-ico"><i class="fa-solid fa-user-tie"></i></div><div><h3>{{ $stats['total'] }}</h3><p>Total Agents</p></div></div>
         <div class="ag-card ag-stat"><div class="ag-ico amber"><i class="fa-solid fa-hourglass-half"></i></div><div><h3>{{ $stats['pending'] }}</h3><p>Pending Approval</p></div></div>
-        <div class="ag-card ag-stat"><div class="ag-ico blue"><i class="fa-solid fa-badge-check"></i></div><div><h3>{{ $stats['verified'] }}</h3><p>Verified</p></div></div>
-        <div class="ag-card ag-stat"><div class="ag-ico green"><i class="fa-solid fa-circle-check"></i></div><div><h3>{{ $stats['active'] }}</h3><p>Active</p></div></div>
+        <div class="ag-card ag-stat"><div class="ag-ico blue"><i class="fa-solid fa-circle-check"></i></div><div><h3>{{ $stats['verified'] }}</h3><p>Verified</p></div></div>
+        <div class="ag-card ag-stat"><div class="ag-ico green"><i class="fa-solid fa-user-check"></i></div><div><h3>{{ $stats['active'] }}</h3><p>Active</p></div></div>
     </div>
 
     <div class="ag-panel">
@@ -37,12 +37,12 @@
             <div class="ag-table-wrap">
                 <table class="ag-table">
                     <thead>
-                        <tr><th>Agent</th><th>Areas</th><th>Approval</th><th>Verified</th><th>Status</th><th class="num">Requests</th><th></th></tr>
+                        <tr><th>Agent</th><th>Areas</th><th>Approval</th><th>Verified</th><th>Status</th><th class="num">Requests</th><th>Quick actions</th><th></th></tr>
                     </thead>
                     <tbody>
                     @foreach($agents as $a)
                         <tr>
-                            <td>{{ $a->user->name }}<small>{{ $a->user->email }}</small></td>
+                            <td>{{ $a->user->name ?? 'Deleted user' }}<small>{{ $a->user->email ?? '' }}</small><small>{{ $a->user->phone ?? '' }}</small></td>
                             <td>
                                 {{ $a->districts->take(3)->pluck('name')->implode(', ') ?: '—' }}
                                 @if($a->districts->count() > 3) <small>+{{ $a->districts->count() - 3 }} more</small> @endif
@@ -51,6 +51,25 @@
                             <td>@if($a->is_verified)<span class="ag-badge blue">Verified</span>@else<span class="ag-badge gray">Not verified</span>@endif</td>
                             <td>@if($a->is_active)<span class="ag-badge green">Active</span>@else<span class="ag-badge red">Inactive</span>@endif</td>
                             <td class="num">{{ $a->requests_count }}</td>
+                            <td>
+                                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                                    <form method="POST" action="{{ route('super-admin.agents.verify', $a) }}">
+                                        @csrf @method('PATCH')
+                                        <button class="ag-btn ghost sm">{{ $a->is_verified ? 'Unverify' : 'Verify' }}</button>
+                                    </form>
+                                    @if($a->approval_status !== 'approved')
+                                        <form method="POST" action="{{ route('super-admin.agents.approval', $a) }}">
+                                            @csrf @method('PATCH')
+                                            <input type="hidden" name="approval_status" value="approved">
+                                            <button class="ag-btn ghost sm">Approve</button>
+                                        </form>
+                                    @endif
+                                    <form method="POST" action="{{ route('super-admin.agents.status', $a) }}">
+                                        @csrf @method('PATCH')
+                                        <button class="ag-btn ghost sm">{{ $a->is_active ? 'Deactivate' : 'Activate' }}</button>
+                                    </form>
+                                </div>
+                            </td>
                             <td class="num">
                                 <a class="ag-btn ghost sm" href="{{ route('super-admin.agents.show', $a) }}">View</a>
                                 <a class="ag-btn ghost sm" href="{{ route('super-admin.agents.edit', $a) }}">Edit</a>

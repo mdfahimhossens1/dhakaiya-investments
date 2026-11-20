@@ -8,24 +8,30 @@ use App\Models\AgentCountry;
 use App\Models\AgentDistrict;
 use App\Models\AgentPaymentMethod;
 use App\Models\User;
+use App\Support\Phone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class AgentController extends Controller
 {
     public function index(Request $request)
     {
-        $q = trim((string) $request->query('q'));
+        $q        = trim((string) $request->query('q'));
         $approval = $request->query('approval');
 
-        $agents = Agent::with(['user:id,name,email', 'districts.country'])
+        $agents = Agent::with(['user:id,name,email,phone', 'districts.country'])
             ->withCount('requests')
             ->when($q !== '', fn ($query) => $query->whereHas('user', fn ($u) => $u->where(
-                fn ($x) => $x->where('name', 'like', "%{$q}%")->orWhere('email', 'like', "%{$q}%")
+                fn ($x) => $x->where('name', 'like', "%{$q}%")
+                    ->orWhere('email', 'like', "%{$q}%")
+                    ->orWhere('phone', 'like', "%{$q}%")
             )))
-            ->when(in_array($approval, ['pending', 'approved', 'rejected'], true),
-                fn ($query) => $query->where('approval_status', $approval))
+            ->when(
+                in_array($approval, ['pending', 'approved', 'rejected'], true),
+                fn ($query) => $query->where('approval_status', $approval)
+            )
             ->latest()
             ->paginate(15)
             ->withQueryString();
@@ -51,6 +57,14 @@ class AgentController extends Controller
 
     public function store(Request $request)
     {
+        $iso = $this->isoFromDistricts((array) $request->input('district_ids'));
+
+        $request->merge([
+            'email'    => Str::lower(trim((string) $request->input('email'))),
+            'phone'    => Phone::normalize((string) $request->input('phone'), $iso),
+            'whatsapp' => $request->filled('whatsapp') ? Phone::normalize((string) $request->input('whatsapp'), $iso) : null,
+        ]);
+
         $data = $request->validate(array_merge([
             'name'           => ['required', 'string', 'max:120'],
             'email'          => ['required', 'email', 'max:190', 'unique:users,email'],
@@ -61,26 +75,27 @@ class AgentController extends Controller
             'district_ids'   => ['required', 'array', 'min:1'],
             'district_ids.*' => ['integer', 'exists:agent_districts,id'],
             'is_verified'    => ['nullable', 'boolean'],
-        ], $this->paymentRules()));
+        ], $this->paymentRules()), [
+            'phone.unique' => 'এই ফোন নাম্বার দিয়ে আগেই অ্যাকাউন্ট আছে।',
+        ]);
 
-        $agent = DB::transaction(function () use ($data, $request) {
+        $agent = DB::transaction(function () use ($data, $request, $iso) {
             $districts = AgentDistrict::with('country')->whereIn('id', $data['district_ids'])->get();
-            $country = $districts->first()->country;
 
+            $verified = $request->has('is_verified') ? $request->boolean('is_verified') : true;
+
+            // role/status Fillable-এ নেই, তাই forceFill। password cast নিজেই hash করে
             $user = new User();
             $user->forceFill([
                 'name'              => $data['name'],
                 'email'             => $data['email'],
                 'phone'             => $data['phone'],
-                'country'           => strtoupper($country->code ?: \App\Support\Currency::normalize($country->name)),
+                'country'           => $iso,
                 'password'          => $data['password'],
                 'role'              => 'agent',
                 'status'            => 'active',
                 'email_verified_at' => now(),
             ])->save();
-
-            // Checkbox na thakle default verified
-            $verified = $request->has('is_verified') ? $request->boolean('is_verified') : true;
 
             $agent = Agent::create([
                 'user_id'         => $user->id,
@@ -101,7 +116,7 @@ class AgentController extends Controller
         });
 
         return redirect()->route('super-admin.agents.show', $agent)
-            ->with('success', 'Agent created.');
+            ->with('success', 'Agent created. Login phone: ' . $agent->phone . ' (use the same country code on the login page).');
     }
 
     public function show(Agent $agent)
@@ -133,6 +148,15 @@ class AgentController extends Controller
     {
         $user = $agent->user;
 
+        $iso = $this->isoFromDistricts((array) $request->input('district_ids'))
+            ?: Phone::iso2($user->country);
+
+        $request->merge([
+            'email'    => Str::lower(trim((string) $request->input('email'))),
+            'phone'    => Phone::normalize((string) $request->input('phone'), $iso),
+            'whatsapp' => $request->filled('whatsapp') ? Phone::normalize((string) $request->input('whatsapp'), $iso) : null,
+        ]);
+
         $data = $request->validate(array_merge([
             'name'           => ['required', 'string', 'max:120'],
             'email'          => ['required', 'email', 'max:190', Rule::unique('users', 'email')->ignore($user->id)],
@@ -142,18 +166,27 @@ class AgentController extends Controller
             'password'       => ['nullable', 'string', 'min:8', 'confirmed'],
             'district_ids'   => ['required', 'array', 'min:1'],
             'district_ids.*' => ['integer', 'exists:agent_districts,id'],
-        ], $this->paymentRules()));
+        ], $this->paymentRules()), [
+            'phone.unique' => 'এই ফোন নাম্বার দিয়ে আগেই অ্যাকাউন্ট আছে।',
+        ]);
 
-        DB::transaction(function () use ($data, $user, $agent, $request) {
+        DB::transaction(function () use ($data, $user, $agent, $request, $iso) {
             $districts = AgentDistrict::whereIn('id', $data['district_ids'])->get();
 
-            $user->name = $data['name'];
+            $user->name  = $data['name'];
             $user->email = $data['email'];
             $user->phone = $data['phone'];
+            $user->country = $iso;
+
             if (! empty($data['password'])) {
                 $user->password = $data['password'];
             }
-            $user->save();
+
+            // পুরোনো এজেন্ট ঠিক করা: role/status/verified
+            $user->forceFill(['role' => 'agent', 'status' => 'active'])->save();
+            if (! $user->email_verified_at) {
+                $user->forceFill(['email_verified_at' => now()])->save();
+            }
 
             $agent->update([
                 'phone'    => $data['phone'],
@@ -168,7 +201,8 @@ class AgentController extends Controller
             }
         });
 
-        return redirect()->route('super-admin.agents.show', $agent)->with('success', 'Agent updated.');
+        return redirect()->route('super-admin.agents.show', $agent)
+            ->with('success', 'Agent updated. Login phone: ' . $data['phone']);
     }
 
     public function toggleVerify(Agent $agent)
@@ -185,7 +219,9 @@ class AgentController extends Controller
 
     public function approval(Request $request, Agent $agent)
     {
-        $data = $request->validate(['approval_status' => ['required', 'in:pending,approved,rejected']]);
+        $data = $request->validate([
+            'approval_status' => ['required', 'in:pending,approved,rejected'],
+        ]);
 
         $agent->update($data);
 
@@ -199,9 +235,13 @@ class AgentController extends Controller
         return back()->with('success', $agent->is_active ? 'Agent activated.' : 'Agent deactivated.');
     }
 
+    /* ------------------------------------------------------------------ */
+
     private function countries()
     {
-        return AgentCountry::with(['districts' => fn ($q) => $q->orderBy('name')])->orderBy('name')->get();
+        return AgentCountry::with(['districts' => fn ($q) => $q->orderBy('name')])
+            ->orderBy('name')
+            ->get();
     }
 
     private function pivot($districts): array
@@ -209,6 +249,22 @@ class AgentController extends Controller
         return $districts->mapWithKeys(fn ($d) => [
             $d->id => ['agent_country_id' => $d->agent_country_id],
         ])->all();
+    }
+
+    /** বাছাই করা প্রথম জেলার দেশের ২ অক্ষরের কোড (ফোন ও Wallet কারেন্সির জন্য) */
+    private function isoFromDistricts(array $ids): string
+    {
+        $district = AgentDistrict::with('country')->find($ids[0] ?? 0);
+        $country = $district?->country;
+
+        if (! $country) {
+            return 'BD';
+        }
+
+        $code = Phone::iso2($country->code);
+
+        // কোড না থাকলে বা অচেনা হলে নাম থেকে চেনার চেষ্টা
+        return isset(Phone::DIAL[$code]) ? $code : Phone::iso2($country->name);
     }
 
     private function paymentRules(): array
@@ -223,10 +279,6 @@ class AgentController extends Controller
         ];
     }
 
-    /**
-     * Existing row update hoy (id thik thake, research request er link bhange na).
-     * Form theke remove kora row delete hoy. Faka row skip hoy.
-     */
     private function syncPaymentMethods(Agent $agent, array $methods): void
     {
         $keep = [];

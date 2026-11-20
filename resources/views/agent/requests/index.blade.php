@@ -2,6 +2,7 @@
 @section('title', 'Research Requests')
 @section('content')
 
+<div class="agent-page">
 <div class="page-heading">
     <div><h2>Research Requests</h2><p>Requests from users in your areas.</p></div>
 </div>
@@ -38,5 +39,6 @@
     @else
         <div class="ag-empty"><i class="fa-solid fa-inbox"></i>No requests in this view.</div>
     @endif
+</div>
 </div>
 @endsection

@@ -2,6 +2,7 @@
 @section('title', 'Agent Dashboard')
 @section('content')
 
+<div class="agent-page">
 <div class="page-heading">
     <div><h2>Welcome, {{ auth()->user()->name }}</h2><p>Your research requests and messages at a glance.</p></div>
     <form method="POST" action="{{ route('agent.availability') }}">@csrf @method('PATCH')
@@ -71,5 +72,6 @@
             <div class="ag-empty"><i class="fa-solid fa-inbox"></i>No requests yet.</div>
         @endif
     </div>
+</div>
 </div>
 @endsection

@@ -98,7 +98,276 @@
     .ag-chat-form { display: flex; gap: 10px; margin-top: 12px; }
     .ag-chat-form textarea { flex: 1; padding: 11px 13px; border: 1px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 13.5px; resize: none; }
     .ag-two { display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: start; }
+/* =========================================
+   AGENT PROFESSIONAL UI - GLOBAL FIX
+========================================= */
 
+.agent-page {
+    width: 100%;
+    max-width: 100%;
+    padding: 24px 0 35px;
+    box-sizing: border-box;
+}
+
+.agent-page * {
+    box-sizing: border-box;
+}
+
+/* Page Heading */
+.agent-page .page-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 18px;
+
+    width: 100%;
+    margin: 0 0 26px !important;
+    padding: 0 0 20px;
+
+    border-bottom: 1px solid #e9edf3;
+}
+
+.agent-page .page-heading > div:first-child {
+    flex: 1;
+    min-width: 220px;
+}
+
+.agent-page .page-heading h2 {
+    margin: 0 0 9px !important;
+    font-size: 25px;
+    font-weight: 750;
+    line-height: 1.4;
+    color: #172033;
+    letter-spacing: -0.5px;
+}
+
+.agent-page .page-heading p {
+    margin: 0 !important;
+    font-size: 14px;
+    line-height: 1.7;
+    color: #718096;
+}
+
+.agent-page .page-heading form {
+    margin: 0;
+    flex-shrink: 0;
+}
+
+/* Main Content */
+.agent-page .ag-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+}
+
+/* Grid */
+.agent-page .ag-grid {
+    width: 100%;
+    display: grid;
+    gap: 22px;
+    align-items: stretch;
+}
+
+.agent-page .ag-g2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.agent-page .ag-g4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* Panels */
+.agent-page .ag-panel {
+    width: 100%;
+    min-width: 0;
+    padding: 24px;
+    border-radius: 14px;
+    background: #fff;
+    border: 1px solid #e8edf4;
+    box-shadow: 0 3px 12px rgba(15, 23, 42, 0.035);
+}
+
+/* Panel Heading */
+.agent-page .ag-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.agent-page .ag-head h3 {
+    margin: 0 0 6px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.agent-page .ag-head p {
+    margin: 0;
+    color: #718096;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+/* Statistics Cards */
+.agent-page .ag-card {
+    min-width: 0;
+    border-radius: 14px;
+}
+
+.agent-page .ag-stat {
+    padding: 22px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-height: 105px;
+}
+
+.agent-page .ag-stat h3 {
+    margin: 0 0 5px;
+    font-size: 25px;
+    font-weight: 750;
+}
+
+.agent-page .ag-stat p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #718096;
+}
+
+/* Forms */
+.agent-page .ag-field {
+    margin-bottom: 18px;
+}
+
+.agent-page .ag-field label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.agent-page .ag-row,
+.agent-page .ag-row3 {
+    display: grid;
+    gap: 16px;
+}
+
+.agent-page .ag-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.agent-page .ag-row3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* Tables */
+.agent-page .ag-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.agent-page .ag-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.agent-page .ag-table th,
+.agent-page .ag-table td {
+    padding: 14px 12px;
+    vertical-align: middle;
+}
+
+/* Messages */
+.agent-page .ag-two {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(260px, 1fr);
+    gap: 22px;
+    align-items: start;
+    width: 100%;
+}
+
+/* Empty State */
+.agent-page .ag-empty {
+    padding: 35px 20px;
+    text-align: center;
+    line-height: 1.7;
+}
+
+/* Buttons */
+.agent-page .ag-btn {
+    min-height: 40px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+    .agent-page .ag-g4 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+
+    .agent-page {
+        padding-top: 18px;
+    }
+
+    .agent-page .page-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        margin-bottom: 20px !important;
+        padding-bottom: 17px;
+    }
+
+    .agent-page .page-heading h2 {
+        font-size: 22px;
+    }
+
+    .agent-page .page-heading form,
+    .agent-page .page-heading form button {
+        width: 100%;
+    }
+
+    .agent-page .ag-g2,
+    .agent-page .ag-g4,
+    .agent-page .ag-two {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .agent-page .ag-panel {
+        padding: 18px;
+    }
+
+    .agent-page .ag-row3 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 480px) {
+
+    .agent-page .ag-row,
+    .agent-page .ag-row3 {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .agent-page .ag-stat {
+        padding: 17px;
+    }
+
+    .agent-page .page-heading h2 {
+        font-size: 20px;
+    }
+}
     @media (max-width: 1000px) { .ag-g4 { grid-template-columns: repeat(2, 1fr); } .ag-two { grid-template-columns: 1fr; } }
     @media (max-width: 750px) { .ag-g3, .ag-g2, .ag-row, .ag-row3 { grid-template-columns: 1fr; } .ag-kv { grid-template-columns: 1fr; gap: 2px 0; } .ag-kv dd { margin-bottom: 8px; } }
     @media (max-width: 550px) { .ag-g4 { grid-template-columns: 1fr; } .ag-card, .ag-panel { padding: 17px; } .ag-bubble { max-width: 90%; } }

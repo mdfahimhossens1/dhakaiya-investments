@@ -9,7 +9,7 @@
 
     <div class="header-right">
 
-        {{-- ==== NEW: APP DOWNLOAD ICON ==== --}}
+        {{-- ==== APP DOWNLOAD ICON ==== --}}
         <button type="button"
                 class="app-dl-btn"
                 data-tooltip="Download App"
@@ -22,11 +22,10 @@
             </svg>
         </button>
 
-        {{-- Notification --}}
-        <button class="notification-btn" type="button" aria-label="Notifications">
-            ♧
-            <span></span>
-        </button>
+        {{-- ==== NOTIFICATION BELL (dynamic: user / agent / admin / super admin) ==== --}}
+        @auth
+            @include('partials.notification-bell')
+        @endauth
 
         {{-- Profile Dropdown --}}
         <div class="profile-dropdown">
@@ -92,7 +91,7 @@
 </header>
 
 
-{{-- ==== NEW: APP DOWNLOAD MODAL ==== --}}
+{{-- ==== APP DOWNLOAD MODAL ==== --}}
 <div class="app-modal-overlay" id="appModalOverlay" onclick="closeAppModalOnOverlay(event)">
     <div class="app-modal" role="dialog" aria-modal="true" aria-labelledby="appModalTitle">
 
@@ -214,7 +213,7 @@
         gap: 20px;
     }
 
-    /* ==== NEW: APP DOWNLOAD ICON ==== */
+    /* ==== APP DOWNLOAD ICON ==== */
     .app-dl-btn {
         position: relative;
         width: 40px;
@@ -286,7 +285,7 @@
         opacity: 1;
     }
 
-    /* ==== NEW: APP DOWNLOAD MODAL ==== */
+    /* ==== APP DOWNLOAD MODAL ==== */
     .app-modal-overlay {
         position: fixed;
         inset: 0;
@@ -587,30 +586,6 @@
         margin-top: 1px;
     }
 
-    /* Notification */
-
-    .notification-btn {
-        position: relative;
-        border: 0;
-        background: #f1f5f4;
-        color: #475569;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        cursor: pointer;
-        font-size: 19px;
-    }
-
-    .notification-btn span {
-        position: absolute;
-        top: 7px;
-        right: 8px;
-        width: 7px;
-        height: 7px;
-        background: #ef4444;
-        border-radius: 50%;
-    }
-
     /* Profile */
 
     .profile-dropdown {
@@ -813,7 +788,7 @@
         }
     });
 
-    /* ==== NEW: APP DOWNLOAD MODAL ==== */
+    /* ==== APP DOWNLOAD MODAL ==== */
     function openAppModal() {
         document.getElementById('appModalOverlay').classList.add('show');
         document.body.style.overflow = 'hidden';
@@ -831,11 +806,9 @@
     }
 
     function storeComingSoon(storeName) {
-        // modal-এ একটা temporary toast message দেখাবে
         const modal = document.querySelector('.app-modal');
         if (!modal) return;
 
-        // পুরনো toast থাকলে সরাও
         const oldToast = modal.querySelector('.app-modal-toast');
         if (oldToast) oldToast.remove();
 
