@@ -121,92 +121,83 @@ class WalletController extends Controller
     /*  Wallet Overview                                                   */
     /* ================================================================== */
 
-    public function index()
-    {
-        $user = auth()->user();
+public function index()
+{
+    $user = auth()->user();
 
-        $country = strtoupper($user->country ?? 'BD');
+    $country = strtoupper($user->country ?? 'BD');
+    $local   = $this->getCountryCurrency($country);
+    $base    = $local['code'];                       // আসল ব্যালেন্সের কারেন্সি (BDT)
 
-        $localCurrency = $this->getCountryCurrency($country);
+    // একটাই Wallet
+    $row = Wallet::firstOrCreate(
+        ['user_id' => $user->id, 'currency' => $base],
+        ['balance' => 0, 'withdrawable_balance' => 0]
+    );
 
-        $localWallet = [
-            'name' => $localCurrency['code'] . ' Wallet',
-            'currency' => $localCurrency['code'],
-            'symbol' => $localCurrency['symbol'],
-            'description' => $localCurrency['name'] . ' Wallet',
-            'status' => 'Not Activated',
-            'icon' => $this->getCountryFlag($country),
+    $raw = [
+        'balance'          => $row->balance,
+        'withdrawable'     => $row->withdrawable_balance,
+        'principal'        => $row->principal_balance,
+        'total_deposit'    => $user->walletTransactions()->where('currency', $base)->where('type', 'deposit')->sum('amount'),
+        'total_withdraw'   => $user->withdrawRequests()->where('currency', $base)->where('status', 'approved')->sum('net_amount'),
+        'pending_withdraw' => $user->withdrawRequests()->where('currency', $base)->where('status', 'pending')->sum('amount'),
+        'total_income'     => $user->walletTransactions()->where('currency', $base)->income()->sum('amount'),
+    ];
+
+    // Card 1: নিজের দেশের কারেন্সি (আসল ব্যালেন্স)
+    $wallets = [
+        array_merge([
+            'name'         => $base . ' Wallet',
+            'currency'     => $base,
+            'symbol'       => $local['symbol'],
+            'description'  => $local['name'] . ' Wallet',
+            'status'       => 'Active',
+            'icon'         => $this->getCountryFlag($country),
+            'display_only' => false,
+            'rate_missing' => false,
+        ], $raw),
+    ];
+
+    // Card 2: USD (একই ব্যালেন্স, শুধু কনভার্ট করে দেখানো)
+    if ($base !== 'USD') {
+        $usd = [
+            'name'         => 'USD Wallet',
+            'currency'     => 'USD',
+            'symbol'       => '$',
+            'description'  => 'Same balance, converted to US Dollar',
+            'status'       => 'Converted View',
+            'icon'         => '🇺🇸',
+            'display_only' => true,
+            'rate_missing' => false,
         ];
 
-        $wallets = [$localWallet];
+        foreach ($raw as $key => $amount) {
+            $converted = $this->convertFor((string) $amount, $base, 'USD');
 
-        // Add USD only when the local currency is not already USD.
-        if ($localCurrency['code'] !== 'USD') {
-            $wallets[] = [
-                'name' => 'USD Wallet',
-                'currency' => 'USD',
-                'symbol' => '$',
-                'description' => 'United States Dollar Wallet',
-                'status' => 'Not Activated',
-                'icon' => '🇺🇸',
-            ];
-        }
-
-        // প্রতিটি Wallet-এ আসল ব্যালেন্স ও হিসাব যোগ করা
-        foreach ($wallets as $i => $w) {
-            $row = Wallet::firstOrCreate(
-                ['user_id' => $user->id, 'currency' => $w['currency']],
-                ['balance' => 0, 'withdrawable_balance' => 0]
-            );
-
-            $cur = $w['currency'];
-
-            $wallets[$i]['status'] = 'Active';
-            $wallets[$i]['balance'] = $row->balance;
-            $wallets[$i]['withdrawable'] = $row->withdrawable_balance;
-            $wallets[$i]['principal'] = $row->principal_balance;
-            $wallets[$i]['total_deposit'] = $user->walletTransactions()
-                ->where('currency', $cur)->where('type', 'deposit')->sum('amount');
-            $wallets[$i]['total_withdraw'] = $user->withdrawRequests()
-                ->where('currency', $cur)->where('status', 'approved')->sum('net_amount');
-            $wallets[$i]['pending_withdraw'] = $user->withdrawRequests()
-                ->where('currency', $cur)->where('status', 'pending')->sum('amount');
-            $wallets[$i]['total_income'] = $user->walletTransactions()
-                ->where('currency', $cur)->income()->sum('amount');
-        }
-        $shareSvc = app(\App\Services\ShareService::class);
-        $totalUsd = '0.00';
-        $usdReady = true;
-
-        foreach ($wallets as $i => $w) {
-            $usd = $w['currency'] === 'USD' ? (string) $w['balance']
-                : $shareSvc->convertAmount((string) $w['balance'], $w['currency'], 'USD');
-
-            $wallets[$i]['usd_equivalent'] = $w['currency'] === 'USD' ? null : $usd;
-
-            if ($usd === null) {
-                $usdReady = false;
-            } else {
-                $totalUsd = bcadd($totalUsd, $usd, 2);
+            if ($converted === null) {
+                $usd['rate_missing'] = true;
+                $converted = '0.00';
             }
+
+            $usd[$key] = $converted;
         }
-        $summary = [
-            'total_wallets' => count($wallets),
-            'active_wallets' => count($wallets),
-            'total_deposits' => $user->depositRequests()->where('status', 'approved')->count(),
-            'total_withdrawals' => $user->withdrawRequests()->where('status', 'approved')->count(),
-            'total_transactions' => $user->walletTransactions()->count(),
-        ];
 
-        $recentTransactions = $user->walletTransactions()->latest()->limit(10)->get();
-
-        return view('user.wallet.index', compact(
-            'user',
-            'wallets',
-            'summary',
-            'recentTransactions'
-        ));
+        $wallets[] = $usd;
     }
+
+    $summary = [
+        'total_wallets'      => count($wallets),
+        'active_wallets'     => count($wallets),
+        'total_deposits'     => $user->depositRequests()->where('status', 'approved')->count(),
+        'total_withdrawals'  => $user->withdrawRequests()->where('status', 'approved')->count(),
+        'total_transactions' => $user->walletTransactions()->count(),
+    ];
+
+    $recentTransactions = $user->walletTransactions()->latest()->limit(10)->get();
+
+    return view('user.wallet.index', compact('user', 'wallets', 'summary', 'recentTransactions'));
+}
 
     /* ================================================================== */
     /*  Deposit                                                           */
@@ -489,12 +480,10 @@ class WalletController extends Controller
     /* ================================================================== */
 
     /** নিজের দেশের কারেন্সি + USD (index() এর নিয়মের সাথে এক) */
-    private function walletCurrencies(User $user): array
-    {
-        $local = $this->getCountryCurrency(strtoupper($user->country ?? 'BD'))['code'];
-
-        return $local === 'USD' ? ['USD'] : [$local, 'USD'];
-    }
+private function walletCurrencies(User $user): array
+{
+    return [$this->getCountryCurrency(strtoupper($user->country ?? 'BD'))['code']];
+}
 
     private function resolveCurrency(Request $request, array $currencies): string
     {
@@ -543,4 +532,14 @@ class WalletController extends Controller
 
         return $next->isFuture() ? $next : null;
     }
+
+    /** $from → $to কনভার্ট। একই হলে যেমন আছে তেমন। Rate না থাকলে null */
+private function convertFor(string $amount, string $from, string $to): ?string
+{
+    if ($from === $to) {
+        return number_format((float) $amount, 2, '.', '');
+    }
+
+    return app(\App\Services\ShareService::class)->convertAmount($amount, $from, $to);
+}
 }

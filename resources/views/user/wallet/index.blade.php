@@ -11,7 +11,7 @@
     <div class="wl-head">
         <div>
             <h2>Wallet Overview</h2>
-            <p>Your balances, deposits, withdrawals and income in one place.</p>
+            <p>Your balance, deposits, withdrawals and income in one place.</p>
         </div>
         <div class="wl-crumb">
             <a href="{{ route('user.dashboard') }}">Dashboard</a><span>/</span><strong>My Wallet</strong>
@@ -28,14 +28,13 @@
         <div class="wl-hero-actions">
             <a href="{{ route('user.deposit') }}">+ Deposit</a>
             <a href="{{ route('user.withdraw') }}" class="alt">Withdraw</a>
-            <a href="{{ route('user.wallet.convert') }}" class="alt">Convert</a>
         </div>
     </div>
 
     <div class="wl-stats">
         <div class="wl-stat">
             <div class="ic"><i class="fas fa-wallet"></i></div>
-            <div><p>Wallets</p><h3>{{ $summary['total_wallets'] }}</h3><small>{{ $summary['active_wallets'] }} active</small></div>
+            <div><p>Wallets</p><h3>{{ $summary['total_wallets'] }}</h3><small>One balance, shown in {{ $summary['active_wallets'] }} {{ $summary['active_wallets'] > 1 ? 'currencies' : 'currency' }}</small></div>
         </div>
         <div class="wl-stat">
             <div class="ic blue"><i class="fas fa-arrow-down"></i></div>
@@ -54,9 +53,9 @@
     <div class="wl-card-h">
         <div>
             <h3>My Wallet Accounts</h3>
-            <p>One wallet per currency. Your local currency is set from your registration country.</p>
+            <p>You have one balance. The other card shows the same balance converted at the current exchange rate.</p>
         </div>
-        <span class="wl-pill">{{ count($wallets) }} Wallets</span>
+        <span class="wl-pill">{{ count($wallets) }} {{ count($wallets) > 1 ? 'Views' : 'View' }}</span>
     </div>
 
     <div class="wl-wallets">
@@ -72,11 +71,17 @@
 
                 <div class="wl-bal-l">TOTAL BALANCE</div>
                 <div class="wl-bal"><span>{{ $w['symbol'] }}</span>{{ number_format((float) $w['balance'], 2) }}</div>
-@if($w['usd_equivalent'] !== null)
-    <div style="margin:-12px 0 16px;font-size:12px;color:var(--muted)">≈ $ {{ number_format((float) $w['usd_equivalent'], 2) }} USD</div>
-@elseif($w['currency'] !== 'USD')
-    <div style="margin:-12px 0 16px;font-size:11px;color:var(--muted)">USD rate not set</div>
-@endif
+
+                @if($w['display_only'])
+                    <div style="margin:-12px 0 16px;font-size:12px;color:var(--muted)">
+                        @if($w['rate_missing'])
+                            USD rate not set
+                        @else
+                            Display only · converted from your {{ $wallets[0]['currency'] }} balance
+                        @endif
+                    </div>
+                @endif
+
                 <div class="wl-mini">
                     <div><span>Withdrawable (Earnings)</span><strong class="wl-pos">{{ $w['symbol'] }} {{ number_format((float) $w['withdrawable'], 2) }}</strong></div>
                     <div><span>Locked (Deposit + Resale)</span><strong>{{ $w['symbol'] }} {{ number_format((float) $w['principal'], 2) }}</strong></div>
@@ -87,8 +92,8 @@
                 </div>
 
                 <div class="wl-wact">
-                    <a href="{{ route('user.deposit', ['currency' => $w['currency']]) }}">Deposit</a>
-                    <a href="{{ route('user.withdraw', ['currency' => $w['currency']]) }}" class="alt">Withdraw</a>
+                    <a href="{{ route('user.deposit') }}">Deposit</a>
+                    <a href="{{ route('user.withdraw') }}" class="alt">Withdraw</a>
                 </div>
             </div>
         @endforeach
@@ -133,7 +138,7 @@
         <i class="fas fa-shield-alt"></i>
         <div>
             <h4>How your balance works</h4>
-            <p><strong>Locked</strong> money (deposits and share resale) can be used to buy shares but cannot be withdrawn. <strong>Withdrawable</strong> money (daily profit, referral commission, rewards) can be withdrawn. Never share your password, PIN or OTP with anyone.</p>
+            <p>You have <strong>one wallet balance</strong>, kept in {{ $wallets[0]['currency'] }}. @if(count($wallets) > 1)The USD card is the same balance converted at the current exchange rate, so the two always match. @endif <strong>Locked</strong> money (deposits and share resale) can be used to buy shares but cannot be withdrawn. <strong>Withdrawable</strong> money (daily profit, referral commission, rewards) can be withdrawn. Never share your password, PIN or OTP with anyone.</p>
         </div>
     </div>
 
