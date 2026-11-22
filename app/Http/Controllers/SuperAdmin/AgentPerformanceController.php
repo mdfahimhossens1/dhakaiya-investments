@@ -17,12 +17,15 @@ class AgentPerformanceController extends Controller
                 'requests as rejected_count'  => fn ($q) => $q->where('status', 'rejected'),
                 'requests as active_count'    => fn ($q) => $q->whereIn('status', ['accepted', 'in_progress']),
                 'requests as waiting_count'   => fn ($q) => $q->whereIn('status', ['pending', 'quoted']),
+                'recharges as recharge_count' => fn ($q) => $q->where('status', 'completed'),
             ])
+            ->withSum(['recharges as total_recharged' => fn ($q) => $q->where('status', 'completed')], 'amount')
+            ->withSum(['deposits as total_deposited'  => fn ($q) => $q->where('status', 'approved')], 'amount')
             ->get()
-            ->sortByDesc('completed_count')
+            ->sortByDesc('total_recharged')
             ->values();
 
-        // Gor completion somoy (din), ek query te
+        // গড় completion সময় (দিন), এক query-তে
         $avgDays = ResearchRequest::where('status', 'completed')
             ->whereNotNull('completed_at')
             ->get(['agent_id', 'created_at', 'completed_at'])

@@ -284,17 +284,54 @@
         : 0;
     $agStatus = request('status');
     $agReq = request()->routeIs('agent.requests.*');
+    $agDeposit = request()->routeIs('agent.deposits.*');
+    $agRecharge = request()->routeIs('agent.recharge.*');
 @endphp
 
 <nav class="sidebar-navigation">
     <div class="menu-section">
         <div class="menu-section-title">MAIN MENU</div>
 
+        {{-- Recharge Balance (ইউজারের Investment Wallet থেকে আলাদা) --}}
+        <a href="{{ route('agent.transactions.index') }}" class="agent-balance" title="View transactions">
+            <small>Recharge Balance</small>
+            <strong>${{ number_format((float) ($agentRec?->recharge_balance ?? 0), 2) }}</strong>
+        </a>
+
         <a href="{{ route('agent.dashboard') }}" class="sidebar-link {{ request()->routeIs('agent.dashboard') ? 'active' : '' }}">
             <span class="menu-icon">⌂</span><span>Dashboard</span>
         </a>
         <a href="{{ route('agent.profile.index') }}" class="sidebar-link {{ request()->routeIs('agent.profile.*') ? 'active' : '' }}">
             <span class="menu-icon">♙</span><span>My Profile</span>
+        </a>
+    </div>
+
+    <div class="menu-section">
+        <div class="menu-section-title">RECHARGE</div>
+
+        <details class="menu-group {{ $agDeposit ? 'active' : '' }}" {{ $agDeposit ? 'open' : '' }}>
+            <summary>
+                <span class="menu-icon">▣</span><span>Deposit</span><span class="menu-arrow">›</span>
+            </summary>
+            <div class="submenu">
+                <a href="{{ route('agent.deposits.create') }}" class="{{ request()->routeIs('agent.deposits.create') ? 'active' : '' }}">Deposit Money</a>
+                <a href="{{ route('agent.deposits.index') }}" class="{{ request()->routeIs('agent.deposits.index') ? 'active' : '' }}">Deposit History</a>
+            </div>
+        </details>
+
+        <details class="menu-group {{ $agRecharge ? 'active' : '' }}" {{ $agRecharge ? 'open' : '' }}>
+            <summary>
+                <span class="menu-icon">⚡</span><span>Recharge</span><span class="menu-arrow">›</span>
+            </summary>
+            <div class="submenu">
+                <a href="{{ route('agent.recharge.search') }}" class="{{ request()->routeIs('agent.recharge.search') ? 'active' : '' }}">Public User Search</a>
+                <a href="{{ route('agent.recharge.create') }}" class="{{ request()->routeIs('agent.recharge.create') ? 'active' : '' }}">Recharge User</a>
+                <a href="{{ route('agent.recharge.history') }}" class="{{ request()->routeIs('agent.recharge.history') ? 'active' : '' }}">Recharge History</a>
+            </div>
+        </details>
+
+        <a href="{{ route('agent.transactions.index') }}" class="sidebar-link {{ request()->routeIs('agent.transactions.*') ? 'active' : '' }}">
+            <span class="menu-icon">☰</span><span>Transactions</span>
         </a>
     </div>
 
@@ -379,9 +416,13 @@
 
         $saAgents = request()->routeIs(
             'super-admin.agents.*', 'super-admin.agent-locations.*',
+            'super-admin.agent-deposits.*',
             'super-admin.research-requests.*', 'super-admin.research-reports.*',
             'super-admin.agent-performance.*'
         );
+
+        // pending এজেন্ট ডিপোজিটের সংখ্যা (ব্যাজের জন্য)
+        $saAgentDepositPending = \App\Models\AgentDeposit::where('status', 'pending')->count();
 
         @endphp
 
@@ -534,6 +575,12 @@
     </summary>
     <div class="submenu">
         <a href="{{ route('super-admin.agents.index') }}" class="{{ request()->routeIs('super-admin.agents.*') ? 'active' : '' }}">Agents</a>
+        <a href="{{ route('super-admin.agent-deposits.index') }}" class="{{ request()->routeIs('super-admin.agent-deposits.*') ? 'active' : '' }}">
+            Agent Deposits
+            @if($saAgentDepositPending)
+                <span class="menu-badge">{{ $saAgentDepositPending }}</span>
+            @endif
+        </a>
         <a href="{{ route('super-admin.agent-locations.index') }}" class="{{ request()->routeIs('super-admin.agent-locations.*') ? 'active' : '' }}">Countries & Districts</a>
         <a href="{{ route('super-admin.research-requests.index') }}" class="{{ request()->routeIs('super-admin.research-requests.*') ? 'active' : '' }}">Research Requests</a>
         <a href="{{ route('super-admin.research-reports.index') }}" class="{{ request()->routeIs('super-admin.research-reports.*') ? 'active' : '' }}">Research Reports</a>
@@ -833,6 +880,45 @@
         letter-spacing: 1.2px;
         padding: 0 10px;
         margin: 20px 0 9px;
+    }
+
+    /* ===== Agent Recharge Balance card ===== */
+    .agent-balance {
+        display: block;
+        margin: 0 0 10px;
+        padding: 12px 14px;
+        border-radius: 10px;
+        background: linear-gradient(120deg, #087f5b, #0b9870);
+        color: #ffffff;
+        text-decoration: none;
+    }
+
+    .agent-balance small {
+        display: block;
+        font-size: 11px;
+        letter-spacing: .6px;
+        opacity: .85;
+    }
+
+    .agent-balance strong {
+        display: block;
+        margin-top: 3px;
+        font-size: 20px;
+        font-weight: 800;
+    }
+
+    /* ===== Count badge (e.g. pending agent deposits) ===== */
+    .menu-badge {
+        display: inline-block;
+        margin-left: 6px;
+        min-width: 20px;
+        padding: 1px 7px;
+        border-radius: 999px;
+        background: #f59e0b;
+        color: #ffffff;
+        font-size: 11px;
+        font-weight: 700;
+        text-align: center;
     }
 
     /* ===== Main links & group headers ===== */

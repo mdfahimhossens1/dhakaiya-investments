@@ -17,23 +17,28 @@ class ShareService
     }
 
        /** 1 unit কারেন্সি = কত BDT। আগে Admin-এর DB, না থাকলে .env। কোনোটাই না থাকলে null */
-    public function rate(string $currency): ?string
-    {
-        $currency = strtoupper($currency);
+  public function rate(string $currency): ?string
+{
+    $currency = strtoupper($currency);
 
-        if ($currency === 'BDT') {
-            return '1';
-        }
-
-        $rate = CurrencyRate::rateFor($currency) ?? config("exchange.rates.$currency");
-
-        if ($rate === null || $rate === '' || (float) $rate <= 0) {
-            return null;
-        }
-
-        return (string) $rate;
+    if ($currency === 'BDT') {
+        return '1';
     }
 
+    $rate = CurrencyRate::rateFor($currency)
+        ?? config("exchange.rates.{$currency}");
+
+    if (
+        $rate === null ||
+        $rate === '' ||
+        !is_numeric($rate) ||
+        (float) $rate <= 0
+    ) {
+        return null;
+    }
+
+    return (string) $rate;
+}
     /** এক কারেন্সির অঙ্ক অন্য কারেন্সিতে (নিচে ছাঁটা)। rate না থাকলে null */
     public function convertAmount(string $amount, string $from, string $to): ?string
     {

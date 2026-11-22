@@ -49,36 +49,27 @@ class ReferralSettingController extends Controller
     public function update(Request $request)
     {
         $data = $request->validate([
-            'commission_on' => ['required', 'in:share_purchase,profit,both'],
             'level1_percent' => ['required', 'numeric', 'min:0', 'max:100'],
-            'level2_percent' => ['required', 'numeric', 'min:0', 'max:100'],
-            'level3_percent' => ['required', 'numeric', 'min:0', 'max:100'],
             'min_investment_to_qualify' => ['required', 'numeric', 'min:0'],
             'max_commission_per_referral' => ['nullable', 'numeric', 'min:0'],
             'hold_days' => ['required', 'integer', 'min:0', 'max:365'],
             'min_commission_withdraw' => ['required', 'numeric', 'min:0'],
         ], [
-            'commission_on.in' => 'Commission On অবশ্যই Share Purchase, Profit অথবা Both হতে হবে।',
+            'level1_percent.required' => 'Commission rate দিতে হবে।',
+            'level1_percent.max' => 'Commission rate সর্বোচ্চ ১০০% হতে পারবে।',
             'hold_days.max' => 'Hold days সর্বোচ্চ ৩৬৫ দিন হতে পারবে।',
         ]);
-
-        // তিন লেভেলের মোট শতাংশ ১০০ এর বেশি হতে পারবে না
-        $total = bcadd(
-            bcadd((string) $data['level1_percent'], (string) $data['level2_percent'], 2),
-            (string) $data['level3_percent'],
-            2
-        );
-
-        if (bccomp($total, '100', 2) === 1) {
-            return back()->withInput()->withErrors([
-                'level1_percent' => 'তিন লেভেলের মোট শতাংশ ১০০ এর বেশি হতে পারবে না।',
-            ]);
-        }
 
         // ফাঁকা থাকলে null = কোনো সীমা নেই
         $data['max_commission_per_referral'] = $data['max_commission_per_referral'] ?? null;
 
         $data['is_enabled'] = $request->boolean('is_enabled');
+
+        // নতুন নিয়ম: কমিশন শুধু Profit-এর উপর, আর শুধু ১ লেভেল।
+        // Admin এগুলো বদলাতে পারবে না, তাই সবসময় জোর করে সেট হবে।
+        $data['commission_on'] = 'profit';
+        $data['level2_percent'] = 0;
+        $data['level3_percent'] = 0;
 
         ReferralSetting::current()->update($data);
 

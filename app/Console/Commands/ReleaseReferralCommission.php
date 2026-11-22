@@ -2,29 +2,22 @@
 
 namespace App\Console\Commands;
 
-use App\Models\ReferralCommission;
-use App\Services\ReferralCommissionService;
+use App\Services\ReferralService;
 use Illuminate\Console\Command;
 
 class ReleaseReferralCommission extends Command
 {
     protected $signature = 'referral:release';
-    protected $description = 'Hold period shesh hoa pending referral commission wallet e credit kore';
+    protected $description = 'Hold period শেষ হওয়া pending referral commission wallet-এ credit করে';
 
-    public function handle(ReferralCommissionService $service): int
+    public function handle(ReferralService $referrals): int
     {
-        $count = 0;
+        $stats = $referrals->releaseDue();
 
-        ReferralCommission::where('status', 'pending')
-            ->where('release_at', '<=', now())
-            ->orderBy('id')
-            ->chunkById(200, function ($rows) use ($service, &$count) {
-                foreach ($rows as $row) {
-                    if ($service->release($row)) $count++;
-                }
-            });
-
-        $this->info("Released {$count} commission(s).");
+        $this->table(
+            ['Released', 'Users', 'Waiting (below min)'],
+            [[$stats['released'], $stats['users'], $stats['waiting']]]
+        );
 
         return self::SUCCESS;
     }

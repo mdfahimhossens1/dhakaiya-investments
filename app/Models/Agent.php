@@ -71,6 +71,8 @@ class Agent extends Model
     {
         return $this->approval_status === 'approved' && $this->is_active;
     }
-
+public function deposits()     { return $this->hasMany(AgentDeposit::class); }
+public function recharges()    { return $this->hasMany(AgentRecharge::class); }
+public function transactions() { return $this->hasMany(AgentTransaction::class); }
 
 }

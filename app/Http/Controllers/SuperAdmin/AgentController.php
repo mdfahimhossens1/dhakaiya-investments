@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Agent;
 use App\Models\AgentCountry;
 use App\Models\AgentDistrict;
+use App\Models\AgentDeposit;
 use App\Models\AgentPaymentMethod;
 use App\Models\User;
 use App\Support\Phone;
@@ -16,7 +17,7 @@ use Illuminate\Validation\Rule;
 
 class AgentController extends Controller
 {
-    public function index(Request $request)
+       public function index(Request $request)
     {
         $q        = trim((string) $request->query('q'));
         $approval = $request->query('approval');
@@ -37,13 +38,41 @@ class AgentController extends Controller
             ->withQueryString();
 
         $stats = [
-            'total'    => Agent::count(),
-            'pending'  => Agent::where('approval_status', 'pending')->count(),
-            'verified' => Agent::where('is_verified', true)->count(),
-            'active'   => Agent::where('is_active', true)->where('approval_status', 'approved')->count(),
+            'total'            => Agent::count(),
+            'pending'          => Agent::where('approval_status', 'pending')->count(),
+            'verified'         => Agent::where('is_verified', true)->count(),
+            'active'           => Agent::where('is_active', true)->where('approval_status', 'approved')->count(),
+            // সব এজেন্টের হাতে থাকা মোট Recharge Balance (কোম্পানির দায়)
+            'total_balance'    => (string) Agent::sum('recharge_balance'),
+            'pending_deposits' => AgentDeposit::where('status', 'pending')->count(),
         ];
 
         return view('super-admin.agents.index', compact('agents', 'stats', 'q', 'approval'));
+    }
+
+    public function show(Agent $agent)
+    {
+        $agent->load(['user', 'districts.country', 'paymentMethods']);
+
+        $counts = $agent->requests()
+            ->selectRaw('status, COUNT(*) as c')
+            ->groupBy('status')
+            ->pluck('c', 'status');
+
+        $recent = $agent->requests()->with('user:id,name')->latest()->limit(8)->get();
+
+        $money = [
+            'balance'         => (string) $agent->recharge_balance,
+            'total_deposited' => (string) $agent->deposits()->where('status', 'approved')->sum('amount'),
+            'pending_deposit' => (string) $agent->deposits()->where('status', 'pending')->sum('amount'),
+            'total_recharged' => (string) $agent->recharges()->where('status', 'completed')->sum('amount'),
+            'recharge_count'  => $agent->recharges()->where('status', 'completed')->count(),
+            'commission'      => (string) $agent->transactions()->where('type', 'commission')->sum('amount'),
+        ];
+
+        $recentTransactions = $agent->transactions()->latest()->limit(10)->get();
+
+        return view('super-admin.agents.show', compact('agent', 'counts', 'recent', 'money', 'recentTransactions'));
     }
 
     public function create()
@@ -119,19 +148,7 @@ class AgentController extends Controller
             ->with('success', 'Agent created. Login phone: ' . $agent->phone . ' (use the same country code on the login page).');
     }
 
-    public function show(Agent $agent)
-    {
-        $agent->load(['user', 'districts.country', 'paymentMethods']);
-
-        $counts = $agent->requests()
-            ->selectRaw('status, COUNT(*) as c')
-            ->groupBy('status')
-            ->pluck('c', 'status');
-
-        $recent = $agent->requests()->with('user:id,name')->latest()->limit(8)->get();
-
-        return view('super-admin.agents.show', compact('agent', 'counts', 'recent'));
-    }
+  
 
     public function edit(Agent $agent)
     {

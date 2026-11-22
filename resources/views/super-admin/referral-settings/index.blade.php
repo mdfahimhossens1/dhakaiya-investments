@@ -28,7 +28,7 @@
             <div class="sa-card-header">
                 <div>
                     <h3>Referral program</h3>
-                    <p>Turn the program on or off and choose what earns commission.</p>
+                    <p>Turn the program on or off.</p>
                 </div>
             </div>
             <div class="sa-card-body">
@@ -44,12 +44,11 @@
                 </div>
 
                 <div class="sa-form-group" style="margin-bottom:0">
-                    <label>Commission is paid on <span>*</span></label>
-                    <select name="commission_on" required>
-                        @foreach(['share_purchase' => 'Referred user\'s share purchase', 'profit' => 'Referred user\'s profit', 'both' => 'Both purchase and profit'] as $value => $label)
-                            <option value="{{ $value }}" {{ old('commission_on', $setting->commission_on) === $value ? 'selected' : '' }}>{{ $label }}</option>
-                        @endforeach
-                    </select>
+                    <small>
+                        Commission is paid <strong>only on the profit</strong> a referred user actually earns.
+                        Account creation, share purchase, research and selling do not earn commission.
+                        If a profit is reversed, its commission is adjusted automatically.
+                    </small>
                 </div>
             </div>
         </div>
@@ -57,20 +56,19 @@
         <div class="sa-card">
             <div class="sa-card-header">
                 <div>
-                    <h3>Commission by level</h3>
-                    <p>Level 1 is the direct referrer. Use 0 to switch a level off.</p>
+                    <h3>Commission rate</h3>
+                    <p>Percentage of the referred user's profit paid to the direct referrer.</p>
                 </div>
-                <span class="sa-total" id="levelTotal">Total 0%</span>
             </div>
             <div class="sa-card-body">
-                <div class="sa-form-row-3">
-                    @foreach([1,2,3] as $n)
-                        <div class="sa-form-group">
-                            <label>Level {{ $n }} (%) <span>*</span></label>
-                            <input type="number" class="level-input" name="level{{ $n }}_percent" min="0" max="100" step="0.01"
-                                value="{{ old('level'.$n.'_percent', $setting->{'level'.$n.'_percent'}) }}" required>
-                        </div>
-                    @endforeach
+                <div class="sa-form-group" style="margin-bottom:0">
+                    <label>Commission rate (%) <span>*</span></label>
+                    <input type="number" name="level1_percent" min="0" max="100" step="0.01"
+                        value="{{ old('level1_percent', $setting->level1_percent) }}" required>
+                    <small>Example: at 10%, a ৳1,000 profit gives the referrer ৳100. The referred user keeps the full ৳1,000.</small>
+                    @error('level1_percent')
+                        <small style="color:#b91c1c">{{ $message }}</small>
+                    @enderror
                 </div>
             </div>
         </div>
@@ -88,7 +86,7 @@
                         <label>Minimum investment to qualify (৳) <span>*</span></label>
                         <input type="number" name="min_investment_to_qualify" min="0" step="0.01"
                             value="{{ old('min_investment_to_qualify', $setting->min_investment_to_qualify) }}" required>
-                        <small>A referred user must invest at least this much.</small>
+                        <small>The referrer must have invested at least this much to earn commission. 0 = just hold any share.</small>
                     </div>
                     <div class="sa-form-group">
                         <label>Max commission per referral (৳)</label>
@@ -105,7 +103,7 @@
                         <small>Commission stays pending for this many days.</small>
                     </div>
                     <div class="sa-form-group">
-                        <label>Minimum commission withdrawal (৳) <span>*</span></label>
+                        <label>Minimum commission payout (৳) <span>*</span></label>
                         <input type="number" name="min_commission_withdraw" min="0" step="0.01"
                             value="{{ old('min_commission_withdraw', $setting->min_commission_withdraw) }}" required>
                     </div>
@@ -124,22 +122,4 @@
 
 @push('styles')
     @include('partials.ui-styles')
-@endpush
-
-@push('scripts')
-    <script>
-        (function () {
-            const inputs = document.querySelectorAll('.level-input');
-            const out = document.getElementById('levelTotal');
-
-            function update() {
-                let sum = 0;
-                inputs.forEach(function (i) { sum += parseFloat(i.value) || 0; });
-                out.textContent = 'Total ' + (Math.round(sum * 100) / 100) + '%';
-            }
-
-            inputs.forEach(function (i) { i.addEventListener('input', update); });
-            update();
-        })();
-    </script>
 @endpush

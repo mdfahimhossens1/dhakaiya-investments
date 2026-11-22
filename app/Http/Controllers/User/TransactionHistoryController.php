@@ -9,7 +9,7 @@ class TransactionHistoryController extends Controller
 {
     /** ফিল্টারের নাম => wallet_transactions.type এর তালিকা */
     private const TYPE_GROUPS = [
-        'deposit' => ['deposit'],
+        'deposit' => ['deposit', 'agent_recharge'],
         'withdrawal' => ['withdraw', 'withdraw_refund'],
         'transfer' => ['transfer_in', 'transfer_out'],
         'income' => ['daily_profit', 'referral_commission', 'reward'],

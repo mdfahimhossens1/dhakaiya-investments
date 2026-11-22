@@ -72,6 +72,7 @@ use App\Http\Controllers\SuperAdmin\AgentController as SuperAdminAgentController
 use App\Http\Controllers\SuperAdmin\AgentLocationController;
 use App\Http\Controllers\SuperAdmin\AgentResearchController;
 use App\Http\Controllers\SuperAdmin\AgentPerformanceController;
+use App\Http\Controllers\SuperAdmin\AgentDepositController;
 use App\Http\Controllers\SuperAdmin\CurrencyRateController;
 use App\Http\Controllers\SuperAdmin\ProfitDistributionController;
 
@@ -79,6 +80,7 @@ use App\Http\Controllers\Agent\DashboardController as AgentDashboardController;
 use App\Http\Controllers\Agent\ProfileController as AgentProfileController;
 use App\Http\Controllers\Agent\RequestController as AgentRequestController;
 use App\Http\Controllers\Agent\MessageController as AgentMessageController;
+use App\Http\Controllers\Agent\{DepositController, RechargeController, TransactionController};
 
 
 Route::get('/', function () {
@@ -439,6 +441,10 @@ Route::controller(AgentResearchController::class)->group(function () {
 
 Route::get('/agent-performance', [AgentPerformanceController::class, 'index'])->name('agent-performance.index');
 
+Route::get('agent-deposits', [AgentDepositController::class, 'index'])->name('agent-deposits.index');
+Route::patch('agent-deposits/{agentDeposit}/approve', [AgentDepositController::class, 'approve'])->name('agent-deposits.approve');
+Route::patch('agent-deposits/{agentDeposit}/reject', [AgentDepositController::class, 'reject'])->name('agent-deposits.reject');
+
 Route::get('/currency-rates', [CurrencyRateController::class, 'index'])->name('currency-rates.index');
 Route::put('/currency-rates', [CurrencyRateController::class, 'update'])->name('currency-rates.update');
 Route::get('/profit-distribution', [ProfitDistributionController::class, 'index'])->name('profit-distribution.index');
@@ -480,6 +486,20 @@ Route::middleware('role:agent')
             Route::get('/{user}', 'show')->name('show');
             Route::post('/{user}', 'store')->middleware('throttle:30,1')->name('store');
         });
+
+        Route::get('deposits', [DepositController::class, 'index'])->name('deposits.index');
+        Route::get('deposits/create', [DepositController::class, 'create'])->name('deposits.create');
+        Route::post('deposits', [DepositController::class, 'store'])->name('deposits.store');
+
+        // দুটো route-ই একই পেজ; throttle দেওয়া আছে যাতে ID ঘুরিয়ে ইউজার খুঁজে বের করা না যায়
+        Route::get('recharge', [RechargeController::class, 'form'])->middleware('throttle:30,1')->name('recharge.create');
+        Route::get('recharge/search', [RechargeController::class, 'form'])->middleware('throttle:30,1')->name('recharge.search');
+        Route::post('recharge', [RechargeController::class, 'store'])->middleware('throttle:20,1')->name('recharge.store');
+        Route::get('recharge/history', [RechargeController::class, 'history'])->name('recharge.history');
+
+        Route::get('transactions', [TransactionController::class, 'index'])->name('transactions.index');
+
+
     });
 
 

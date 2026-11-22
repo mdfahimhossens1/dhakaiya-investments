@@ -7,7 +7,7 @@
 <div class="page-heading">
     <div>
         <h2>Referral Statistics</h2>
-        <p>Your referral network growth and earnings by level.</p>
+        <p>Your referral network growth and profit-based earnings.</p>
     </div>
 </div>
 
@@ -43,7 +43,13 @@
 
 @php
     use Illuminate\Support\Str;
+
     $max = max($monthlyStatistics->max('total'), 1);
+
+    $rate  = (float) $program['rate_percent'];
+    $row   = $byLevel->get(1);
+    $earned = $row?->total ?? 0;
+    $count  = (int) ($row?->c ?? 0);
 @endphp
 
 <div class="rf-wrap">
@@ -54,7 +60,7 @@
             <div class="rf-icon"><i class="fa-solid fa-users"></i></div>
             <div>
                 <h3>{{ $summary['total_referrals'] }}</h3>
-                <p>Direct Referrals</p>
+                <p>Total Referrals</p>
             </div>
         </div>
         <div class="rf-card">
@@ -80,7 +86,7 @@
             <div class="rf-panel-head">
                 <div>
                     <h3>Monthly Overview</h3>
-                    <p>New direct referrals and commission, last six months.</p>
+                    <p>New referrals and commission, last six months.</p>
                 </div>
             </div>
 
@@ -120,15 +126,12 @@
         </div>
     </div>
 
-    {{-- Level breakdown --}}
+    {{-- Earnings --}}
     <div class="rf-panel">
         <div class="rf-panel-head">
             <div>
-                <h3>Network &amp; Earnings by Level</h3>
-                <p>
-                    Team size and commission earned at each level
-                    @if($enabled) · Earned on {{ $program['commission_on_label'] }} @endif
-                </p>
+                <h3>Earnings from Referral Profit</h3>
+                <p>You earn commission only when your referred members make a profit.</p>
             </div>
             @if(! $enabled)
                 <span class="rf-badge cancelled">Program Off</span>
@@ -136,26 +139,16 @@
         </div>
 
         <div class="rf-levels">
-            @foreach([1 => 'Direct', 2 => 'Second level', 3 => 'Third level'] as $lvl => $label)
-                @php
-                    $rate   = (float) ($program['levels'][$lvl] ?? 0);
-                    $row    = $byLevel->get($lvl);
-                    $earned = $row?->total ?? 0;
-                    $count  = (int) ($row?->c ?? 0);
-                @endphp
+            <div class="rf-level {{ $rate <= 0 ? 'off' : '' }}">
+                <small>Commission rate</small>
+                <strong>{{ $rate > 0 ? ($rate + 0) . '%' : '—' }}</strong>
+                <span>of referred member's profit</span>
 
-                <div class="rf-level {{ $rate <= 0 ? 'off' : '' }}">
-                    <small>Level {{ $lvl }} · {{ $label }}</small>
-                    <strong>{{ $team[$lvl] }}</strong>
-                    <span>members</span>
-
-                    <span style="margin-top:14px;color:var(--text);font-weight:700;font-size:14px;">
-                        ৳{{ number_format($earned, 2) }} earned
-                    </span>
-                    <span>{{ $count }} {{ Str::plural('commission', $count) }}</span>
-                    <span>{{ $rate > 0 ? 'Rate: ' . ($rate + 0) . '%' : 'Level disabled' }}</span>
-                </div>
-            @endforeach
+                <span style="margin-top:14px;color:var(--text);font-weight:700;font-size:14px;">
+                    ৳{{ number_format($earned, 2) }} earned
+                </span>
+                <span>{{ $count }} {{ Str::plural('commission', $count) }}</span>
+            </div>
         </div>
     </div>
 

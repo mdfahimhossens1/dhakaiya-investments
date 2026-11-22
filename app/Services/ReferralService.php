@@ -12,6 +12,10 @@ use Illuminate\Support\Facades\DB;
 
 class ReferralService
 {
+
+private const TYPE = 'profit';
+private const MAX_LEVEL = 1;
+
     public function __construct(
         private WalletService $wallets,
         private ShareService $shares
@@ -38,208 +42,145 @@ class ReferralService
         return bccomp($this->investmentOf($user), $min, 2) >= 0;
     }
 
-    /** শেয়ার কেনার সাথে সাথে */
-    public function onSharePurchase(ShareOrder $order): int
-    {
-        $source = $order->user;
-
-        if (! $source || ! $source->referred_by_id) {
-            return 0;
-        }
-
-        return $this->record($source, 'share_purchase', 'order-' . $order->id, (string) $order->net_bdt);
+    /**
+ * Profit Wallet-এ credit হওয়ার ঠিক পরে (একই DB transaction-এর ভেতরে) call হবে।
+ * $profitRef = প্রতিটি Profit Transaction-এর unique রেফারেন্স, যেমন "profit-{wallet_transaction_id}"
+ */
+public function onProfitCredited(User $source, string $profitBdt, string $profitRef): int
+{
+    if (! $source->referred_by_id) {
+        return 0;
     }
 
-    /** মাসিক লাভের উপর */
-    public function onMonthlyProfit(User $source, string $month, string $profitBdt): int
-    {
-        if (! $source->referred_by_id) {
-            return 0;
-        }
+    return $this->record($source, $profitRef, $profitBdt);
+}
 
-        return $this->record($source, 'profit', $month, $profitBdt);
+public function record(User $source, string $profitRef, string $profitBdt): int
+{
+    $s = ReferralSetting::current();
+
+    if (! $s->is_enabled) {
+        return 0;
     }
 
-    /** ৩ লেভেল পর্যন্ত কমিশন রেকর্ড (pending) */
-    public function record(User $source, string $type, string $periodKey, string $baseBdt): int
-    {
-        $s = ReferralSetting::current();
-
-        if (! $s->is_enabled) {
-            return 0;
-        }
-
-        if (! in_array($s->commission_on, [$type, 'both'], true)) {
-            return 0;
-        }
-
-        if (bccomp($baseBdt, '0', 2) <= 0) {
-            return 0;
-        }
-
-        $created = 0;
-        $current = $source;
-        $seen = [$source->id];
-
-        for ($level = 1; $level <= 3; $level++) {
-            $parent = $current->referredBy;
-
-            if (! $parent || in_array($parent->id, $seen, true)) {
-                break;
-            }
-
-            $seen[] = $parent->id;
-            $current = $parent;
-
-            $percent = (string) $s->{"level{$level}_percent"};
-
-            if (bccomp($percent, '0', 3) <= 0) {
-                continue;
-            }
-
-            if ($parent->status !== 'active' || $parent->role !== 'user') {
-                continue;
-            }
-
-            if (! $this->isQualified($parent, $s)) {
-                continue;
-            }
-
-            $amount = bcdiv(bcmul($baseBdt, $percent, 6), '100', 2);
-
-            // একজন রেফার করা ইউজার থেকে মোট সীমা
-            $max = $s->max_commission_per_referral;
-
-            if ($max !== null && bccomp((string) $max, '0', 2) > 0) {
-                $already = (string) ReferralCommission::where('user_id', $parent->id)
-                    ->where('source_user_id', $source->id)
-                    ->where('status', '!=', 'cancelled')
-                    ->sum('commission_bdt');
-
-                $remaining = bcsub((string) $max, $already, 2);
-
-                if (bccomp($remaining, '0', 2) <= 0) {
-                    continue;
-                }
-
-                if (bccomp($amount, $remaining, 2) > 0) {
-                    $amount = $remaining;
-                }
-            }
-
-            if (bccomp($amount, '0', 2) <= 0) {
-                continue;
-            }
-
-            try {
-                ReferralCommission::create([
-                    'user_id' => $parent->id,
-                    'source_user_id' => $source->id,
-                    'level' => $level,
-                    'type' => $type,
-                    'period_key' => $periodKey,
-                    'base_bdt' => $baseBdt,
-                    'percent' => $percent,
-                    'commission_bdt' => $amount,
-                    'status' => 'pending',
-                    'release_at' => now()->addDays((int) $s->hold_days),
-                ]);
-
-                $created++;
-            } catch (UniqueConstraintViolationException) {
-                // আগেই তৈরি হয়েছে
-            }
-        }
-
-        return $created;
+    // শুধু বাস্তব Profit-এর উপর; লস বা ০ হলে কমিশন নেই
+    if (bccomp($profitBdt, '0', 2) <= 0) {
+        return 0;
     }
 
-    /** hold শেষ হওয়া কমিশন Wallet-এ পাঠানো */
-    public function releaseDue(): array
-    {
-        $s = ReferralSetting::current();
-        $min = (string) ($s->min_commission_withdraw ?? 0);
+    $created = 0;
+    $current = $source;
+    $seen = [$source->id];
 
-        $stats = ['released' => 0, 'users' => 0, 'waiting' => 0];
+    for ($level = 1; $level <= self::MAX_LEVEL; $level++) {
+        $parent = $current->referredBy;
 
-        $userIds = ReferralCommission::where('status', 'pending')
-            ->where('release_at', '<=', now())
-            ->distinct()
-            ->pluck('user_id');
+        if (! $parent || in_array($parent->id, $seen, true)) {
+            break;
+        }
 
-        foreach ($userIds as $userId) {
-            $user = User::find($userId);
+        $seen[] = $parent->id;
+        $current = $parent;
 
-            if (! $user || $user->status !== 'active') {
+        $percent = (string) $s->{"level{$level}_percent"};
+
+        if (bccomp($percent, '0', 3) <= 0) {
+            continue;
+        }
+
+        if ($parent->status !== 'active' || $parent->role !== 'user') {
+            continue;
+        }
+
+        if (! $this->isQualified($parent, $s)) {
+            continue;
+        }
+
+        $amount = bcdiv(bcmul($profitBdt, $percent, 6), '100', 2);
+
+        $max = $s->max_commission_per_referral;
+
+        if ($max !== null && bccomp((string) $max, '0', 2) > 0) {
+            $already = (string) ReferralCommission::where('user_id', $parent->id)
+                ->where('source_user_id', $source->id)
+                ->where('status', '!=', 'cancelled')
+                ->sum('commission_bdt');
+
+            $remaining = bcsub((string) $max, $already, 2);
+
+            if (bccomp($remaining, '0', 2) <= 0) {
                 continue;
             }
 
-            $count = DB::transaction(function () use ($user, $min) {
-                $rows = ReferralCommission::where('user_id', $user->id)
-                    ->where('status', 'pending')
-                    ->where('release_at', '<=', now())
-                    ->lockForUpdate()
-                    ->get();
-
-                if ($rows->isEmpty()) {
-                    return 0;
-                }
-
-                $total = $rows->reduce(fn ($c, $r) => bcadd($c, (string) $r->commission_bdt, 2), '0.00');
-
-                if (bccomp($total, $min, 2) < 0) {
-                    return -1; // মিনিমামের কম, জমতে থাকবে
-                }
-
-                $home = $this->shares->home($user);
-
-                if (! $home) {
-                    return 0; // রেট নেই, কমিশন pending থাকবে
-                }
-
-                $currency = $home['currency'];
-                $rate = $home['rate'];
-                $n = 0;
-
-                foreach ($rows as $row) {
-                    $walletAmount = bcdiv((string) $row->commission_bdt, $rate, 2);
-
-                    if (bccomp($walletAmount, '0', 2) <= 0) {
-                        continue;
-                    }
-
-                    $row->update([
-                        'status' => 'paid',
-                        'paid_at' => now(),
-                        'wallet_currency' => $currency,
-                        'exchange_rate' => $rate,
-                        'wallet_amount' => $walletAmount,
-                    ]);
-
-                    $this->wallets->credit(
-                        $user,
-                        'referral_commission',
-                        $walletAmount,
-                        $row,
-                        "Referral commission L{$row->level} ({$row->period_key})",
-                        ['level' => $row->level, 'source_user_id' => $row->source_user_id],
-                        $currency
-                    );
-
-                    $n++;
-                }
-
-                return $n;
-            });
-
-            if ($count === -1) {
-                $stats['waiting']++;
-            } elseif ($count > 0) {
-                $stats['released'] += $count;
-                $stats['users']++;
+            if (bccomp($amount, $remaining, 2) > 0) {
+                $amount = $remaining;
             }
         }
 
-        return $stats;
+        if (bccomp($amount, '0', 2) <= 0) {
+            continue;
+        }
+
+        try {
+            ReferralCommission::create([
+                'user_id'        => $parent->id,
+                'source_user_id' => $source->id,
+                'level'          => $level,
+                'type'           => self::TYPE,
+                'period_key'     => $profitRef,   // প্রতি Profit Transaction-এ একবারই
+                'base_bdt'       => $profitBdt,
+                'percent'        => $percent,
+                'commission_bdt' => $amount,
+                'status'         => 'pending',
+                'release_at'     => now()->addDays((int) $s->hold_days),
+            ]);
+
+            $created++;
+        } catch (UniqueConstraintViolationException) {
+            // একই Profit থেকে আগেই তৈরি হয়েছে, তাই আর হবে না
+        }
     }
+
+    return $created;
+}
+
+/** Profit বাতিল/Reversal হলে সংশ্লিষ্ট কমিশন সমন্বয় */
+public function reverseForProfit(string $profitRef): array
+{
+    $stats = ['cancelled' => 0, 'clawed_back' => 0];
+
+    DB::transaction(function () use ($profitRef, &$stats) {
+        $rows = ReferralCommission::where('type', self::TYPE)
+            ->where('period_key', $profitRef)
+            ->where('status', '!=', 'cancelled')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($rows as $row) {
+            if ($row->status === 'pending') {
+                $row->update(['status' => 'cancelled']);
+                $stats['cancelled']++;
+                continue;
+            }
+
+            // paid হয়ে গেলে wallet থেকে ফেরত নিতে হবে
+            // WalletService-এ আপনার debit method-এর নাম/signature অনুযায়ী মিলিয়ে নিন
+            $this->wallets->debit(
+                $row->user,
+                'referral_commission_reversal',
+                (string) $row->wallet_amount,
+                $row,
+                "Referral commission reversed L{$row->level} ({$row->period_key})",
+                ['level' => $row->level, 'source_user_id' => $row->source_user_id],
+                $row->wallet_currency
+            );
+
+            $row->update(['status' => 'cancelled']);
+            $stats['clawed_back']++;
+        }
+    });
+
+    return $stats;
+}
+
 }

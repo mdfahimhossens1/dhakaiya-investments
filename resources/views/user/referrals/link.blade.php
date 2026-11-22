@@ -7,7 +7,7 @@
 <div class="page-heading">
     <div>
         <h2>Referral Link</h2>
-        <p>Share your referral link and earn when your network grows.</p>
+        <p>Share your referral link and earn when your referred members make a profit.</p>
     </div>
 </div>
 
@@ -78,12 +78,7 @@
 
 @php
     $shareText = 'Join me on ' . config('app.name') . ' using my referral link: ' . $referralLink;
-    $topRate = count($program['levels']) ? max(array_map('floatval', $program['levels'])) : 0;
-    $activityLabel = [
-        'share_purchase' => 'share purchases',
-        'profit'         => 'profit',
-        'both'           => 'share purchases and profit',
-    ][$program['commission_on']] ?? 'activity';
+    $rate = (float) $program['rate_percent'];
     $days = (int) $program['hold_days'];
 @endphp
 
@@ -95,8 +90,8 @@
             <h3><i class="fa-solid fa-share-nodes"></i> Invite &amp; Earn</h3>
             <p>
                 Share your personal link with friends and family.
-                @if($enabled && $topRate > 0)
-                    You can earn up to <strong>{{ $topRate + 0 }}%</strong> commission on {{ $activityLabel }}.
+                @if($enabled && $rate > 0)
+                    You earn <strong>{{ $rate + 0 }}%</strong> commission on the profit your referred members make.
                 @endif
             </p>
         </div>
@@ -157,12 +152,12 @@
     </div>
 
     @if($enabled)
-        {{-- How it works (dynamic) --}}
+        {{-- How it works --}}
         <div class="rf-panel">
             <div class="rf-panel-head">
                 <div>
                     <h3>How it works</h3>
-                    <p>Commission is paid across up to {{ count($program['levels']) }} {{ \Illuminate\Support\Str::plural('level', count($program['levels'])) }}.</p>
+                    <p>You earn only when your referred member makes a real profit.</p>
                 </div>
             </div>
 
@@ -177,12 +172,13 @@
                 <div class="rf-step">
                     <div class="rf-step-no">2</div>
                     <div>
-                        <h4>They get active</h4>
+                        <h4>They earn a profit</h4>
                         <p>
-                            Commission is earned on their {{ $activityLabel }}
+                            When a referred member earns profit from their shares, you get {{ $rate > 0 ? ($rate + 0) . '%' : 'a share' }} of that profit.
+                            Joining, buying shares, research or selling alone does not earn commission.
                             @if((float) $program['min_investment_bdt'] > 0)
-                                (minimum ৳{{ number_format($program['min_investment_bdt'], 2) }} investment to qualify)
-                            @endif.
+                                You need at least ৳{{ number_format($program['min_investment_bdt'], 2) }} invested to qualify.
+                            @endif
                         </p>
                     </div>
                 </div>
@@ -203,11 +199,11 @@
             </div>
 
             <div class="rf-chips">
-                @foreach($program['levels'] as $lvl => $pct)
-                    <span class="rf-chip"><i class="fa-solid fa-layer-group"></i> Level {{ $lvl }}: {{ $pct + 0 }}%</span>
-                @endforeach
+                @if($rate > 0)
+                    <span class="rf-chip"><i class="fa-solid fa-percent"></i> Commission: {{ $rate + 0 }}% of profit</span>
+                @endif
 
-                <span class="rf-chip"><i class="fa-solid fa-wallet"></i> Min withdrawal: ৳{{ number_format($program['min_payout_bdt'], 2) }}</span>
+                <span class="rf-chip"><i class="fa-solid fa-wallet"></i> Min payout: ৳{{ number_format($program['min_payout_bdt'], 2) }}</span>
 
                 @if($program['max_per_referral_bdt'] !== null)
                     <span class="rf-chip"><i class="fa-solid fa-ranking-star"></i> Cap per referral: ৳{{ number_format($program['max_per_referral_bdt'], 2) }}</span>
@@ -218,7 +214,8 @@
         <div class="rf-notice">
             <i class="fa-solid fa-circle-info"></i>
             <strong>Note:</strong>
-            Commission follows the current program rules and is credited only after the hold period.
+            Commission is paid only on profit actually earned, never on the amount invested.
+            If a profit is cancelled or reversed, the related commission is adjusted too.
             Rules may change over time and apply to future activity.
         </div>
     @else

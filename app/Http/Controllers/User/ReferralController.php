@@ -5,20 +5,12 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use App\Models\ReferralSetting;
 use App\Services\ReferralService;
-use App\Models\ReferralCommission;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class ReferralController extends Controller
 {
-    /** Super Admin-এর "commission_on" অনুযায়ী লেবেল */
-    private const COMMISSION_ON = [
-        'share_purchase' => 'Share Purchase',
-        'profit' => 'Profit',
-        'both' => 'Share Purchase + Profit',
-    ];
-
     /* ================================================================== */
     /*  Referral Link                                                     */
     /* ================================================================== */
@@ -141,13 +133,8 @@ class ReferralController extends Controller
             'hold_days' => $setting->hold_days,
             'min_payout_bdt' => $setting->min_commission_withdraw,
             'max_per_referral_bdt' => $setting->max_commission_per_referral,
-            'levels' => [
-                1 => $setting->level1_percent,
-                2 => $setting->level2_percent,
-                3 => $setting->level3_percent,
-            ],
-            'commission_on' => $setting->commission_on,
-            'commission_on_label' => self::COMMISSION_ON[$setting->commission_on] ?? $setting->commission_on,
+            // একটাই রেট: Referred User-এর অর্জিত Profit-এর উপর
+            'rate_percent' => $setting->level1_percent,
         ];
 
         return view('user.referrals.commission', compact(
@@ -212,24 +199,13 @@ class ReferralController extends Controller
             ];
         });
 
-        // লেভেল অনুযায়ী কমিশন (level => row)
+        // লেভেল অনুযায়ী কমিশন (এখন শুধু Level 1; statistics view না ভাঙার জন্য রাখা)
         $byLevel = $this->commissions($user)
             ->selectRaw('level, COUNT(*) as c, SUM(commission_bdt) as total')
             ->groupBy('level')
             ->orderBy('level')
             ->get()
             ->keyBy('level');
-
-        // লেভেল অনুযায়ী টিম সাইজ (৩ লেভেল)
-        $l1Ids = $user->referrals()->pluck('id');
-        $l2Ids = $l1Ids->isEmpty()
-            ? collect()
-            : User::whereIn('referred_by_id', $l1Ids)->pluck('id');
-        $l3Count = $l2Ids->isEmpty()
-            ? 0
-            : User::whereIn('referred_by_id', $l2Ids)->count();
-
-        $team = [1 => $l1Ids->count(), 2 => $l2Ids->count(), 3 => $l3Count];
 
         $latestReferrals = $user->referrals()
             ->latest()
@@ -243,7 +219,6 @@ class ReferralController extends Controller
             'summary',
             'monthlyStatistics',
             'byLevel',
-            'team',
             'latestReferrals',
             'enabled',
             'program'
@@ -277,16 +252,15 @@ class ReferralController extends Controller
     /** Super Admin-এর সেটিং থেকে ইউজারকে দেখানোর প্রোগ্রাম তথ্য */
     private function program(ReferralSetting $setting): array
     {
-        $levels = collect([
-            1 => $setting->level1_percent,
-            2 => $setting->level2_percent,
-            3 => $setting->level3_percent,
-        ])->filter(fn ($p) => (float) $p > 0);   // 0% লেভেল দেখাবে না
+        $rate = $setting->level1_percent;
 
         return [
-            'levels' => $levels->all(),
-            'commission_on' => $setting->commission_on,
-            'commission_on_label' => self::COMMISSION_ON[$setting->commission_on] ?? $setting->commission_on,
+            'rate_percent' => $rate,
+            // পুরনো view (link/index/statistics) যেন না ভাঙে, তাই 'levels' রাখা হয়েছে
+            'levels' => (float) $rate > 0 ? [1 => $rate] : [],
+            // কমিশন এখন শুধু Profit-এর উপর
+            'commission_on' => 'profit',
+            'commission_on_label' => 'Profit',
             'min_investment_bdt' => $setting->min_investment_to_qualify,
             'max_per_referral_bdt' => $setting->max_commission_per_referral,
             'hold_days' => $setting->hold_days,
