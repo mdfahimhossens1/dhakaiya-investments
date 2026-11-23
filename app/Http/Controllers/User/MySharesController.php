@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 
 class MySharesController extends Controller
 {
-    public function index(Request $request, ShareService $service)
+    public function index(Request $request)
     {
         $user = auth()->user();
 
@@ -47,6 +47,7 @@ class MySharesController extends Controller
             'completed_records' => $user->shareHoldings()->where('shares', 0)->count(),
             'total_shares' => $active->sum('shares'),
             'locked_shares' => $active->sum('locked_shares'),
+            'listed_shares' => $active->sum('listed_shares'),
             'total_invested_bdt' => $active->reduce(
                 fn ($c, $h) => bcadd($c, (string) $h->invested_bdt, 2), '0.00'
             ),
@@ -55,27 +56,23 @@ class MySharesController extends Controller
             ),
         ];
 
-        // রিসেলে টাকা কোন Wallet-এ যাবে (rate সেট আছে এমন Wallet)
-        $walletOptions = $user->wallets()->get()
-            ->filter(fn ($w) => $service->rate($w->currency) !== null)
-            ->map(fn ($w) => [
-                'currency' => $w->currency,
-                'balance' => $w->balance,
-                'rate' => $service->rate($w->currency),
-            ])
-            ->values();
-
         return view('user.investment.my-shares', compact(
             'user',
             'shares',
             'status',
-            'summary',
-            'walletOptions'
+            'summary'
         ));
     }
 
+    /** কোম্পানিকে সরাসরি রিসেল: বন্ধ। পুরোনো ফর্ম/লিংক থেকে এলে মার্কেটপ্লেসের Resell Share পেজে পাঠানো হয়। */
     public function sell(Request $request, Project $project, ShareService $service)
     {
+        if (! config('exchange.company_buyback_enabled', false)) {
+            return redirect()
+                ->route('user.resell.index', ['project' => $project->id])
+                ->with('error', 'কোম্পানিকে সরাসরি রিসেল এখন বন্ধ আছে। অন্য সদস্যদের কাছে বিক্রি করতে এখান থেকে Post for Sale করুন।');
+        }
+
         $data = $request->validate([
             'shares' => ['required', 'integer', 'min:1', 'max:1000000'],
             'currency' => ['required', 'string', 'size:3'],

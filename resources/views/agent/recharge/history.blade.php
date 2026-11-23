@@ -2,7 +2,11 @@
 @section('title', 'Recharge History')
 @section('content')
 
-@php $color = ['completed' => 'green', 'reversed' => 'gray']; @endphp
+@php
+    $cur = $agent->currency();
+    $m = fn ($a, $c = null) => \App\Support\AgentMoney::format($a, $c ?: $cur);
+    $color = ['completed' => 'green', 'reversed' => 'gray'];
+@endphp
 
 <div class="page-heading">
     <div><h2>Recharge History</h2><p>Every recharge you made to users.</p></div>
@@ -15,7 +19,7 @@
 <div class="ag-wrap">
     <div class="ag-grid ag-g2">
         <div class="ag-card ag-stat"><div class="ag-ico purple"><i class="fa-solid fa-bolt"></i></div><div><h3>{{ $summary['count'] }}</h3><p>Recharges</p></div></div>
-        <div class="ag-card ag-stat"><div class="ag-ico green"><i class="fa-solid fa-dollar-sign"></i></div><div><h3>${{ number_format($summary['total'], 2) }}</h3><p>Total Recharged</p></div></div>
+        <div class="ag-card ag-stat"><div class="ag-ico green"><i class="fa-solid fa-coins"></i></div><div><h3>{{ $m($summary['total']) }}</h3><p>Total Recharged</p></div></div>
     </div>
 
     <div class="ag-panel">
@@ -29,14 +33,13 @@
         @if($recharges->count())
             <div class="ag-table-wrap">
                 <table class="ag-table">
-                    <thead><tr><th>Date</th><th>User</th><th class="num">Amount (USD)</th><th class="num">Credited to user</th><th>Status</th></tr></thead>
+                    <thead><tr><th>Date</th><th>User</th><th class="num">Amount</th><th>Status</th></tr></thead>
                     <tbody>
                     @foreach($recharges as $r)
                         <tr>
                             <td>{{ $r->created_at->format('d M Y') }}<small>{{ $r->created_at->format('h:i A') }}</small></td>
                             <td>{{ $r->user?->name ?? 'User' }}<small>#{{ $r->user_id }}</small></td>
-                            <td class="num">${{ number_format($r->amount, 2) }}</td>
-                            <td class="num">{{ number_format($r->wallet_amount, 2) }} {{ $r->wallet_currency }}</td>
+                            <td class="num">{{ $m($r->wallet_amount, $r->wallet_currency) }}</td>
                             <td><span class="ag-badge {{ $color[$r->status] ?? 'gray' }}">{{ ucfirst($r->status) }}</span></td>
                         </tr>
                     @endforeach

@@ -23,7 +23,7 @@
     <div class="wl-hero">
         <div>
             <h2>💳 My Wallet</h2>
-            <p>Deposits are credited after admin verification. Only your earnings can be withdrawn, to your saved accounts.</p>
+            <p>Deposits are credited after admin verification. Your whole wallet balance can be used to buy shares or withdrawn to your saved accounts.</p>
         </div>
         <div class="wl-hero-actions">
             <a href="{{ route('user.deposit') }}">+ Deposit</a>
@@ -83,8 +83,8 @@
                 @endif
 
                 <div class="wl-mini">
-                    <div><span>Withdrawable (Earnings)</span><strong class="wl-pos">{{ $w['symbol'] }} {{ number_format((float) $w['withdrawable'], 2) }}</strong></div>
-                    <div><span>Locked (Deposit + Resale)</span><strong>{{ $w['symbol'] }} {{ number_format((float) $w['principal'], 2) }}</strong></div>
+                    <div><span>Available to Buy Shares</span><strong class="wl-pos">{{ $w['symbol'] }} {{ number_format((float) $w['balance'], 2) }}</strong></div>
+                    <div><span>Available to Withdraw</span><strong class="wl-pos">{{ $w['symbol'] }} {{ number_format((float) $w['balance'], 2) }}</strong></div>
                     <div><span>Total Deposited</span><strong>{{ $w['symbol'] }} {{ number_format((float) $w['total_deposit'], 2) }}</strong></div>
                     <div><span>Total Withdrawn</span><strong>{{ $w['symbol'] }} {{ number_format((float) $w['total_withdraw'], 2) }}</strong></div>
                     <div><span>Pending Withdrawal</span><strong>{{ $w['symbol'] }} {{ number_format((float) $w['pending_withdraw'], 2) }}</strong></div>
@@ -138,7 +138,7 @@
         <i class="fas fa-shield-alt"></i>
         <div>
             <h4>How your balance works</h4>
-            <p>You have <strong>one wallet balance</strong>, kept in {{ $wallets[0]['currency'] }}. @if(count($wallets) > 1)The USD card is the same balance converted at the current exchange rate, so the two always match. @endif <strong>Locked</strong> money (deposits and share resale) can be used to buy shares but cannot be withdrawn. <strong>Withdrawable</strong> money (daily profit, referral commission, rewards) can be withdrawn. Never share your password, PIN or OTP with anyone.</p>
+            <p>You have <strong>one wallet balance</strong>, kept in {{ $wallets[0]['currency'] }}. @if(count($wallets) > 1)The USD card is the same balance converted at the current exchange rate, so the two always match. @endif Everything goes into this one wallet: deposits, daily profit, referral commission, rewards and share resale. You can use <strong>all of it</strong> to buy shares, or withdraw it to your saved accounts. Never share your password, PIN or OTP with anyone.</p>
         </div>
     </div>
 

@@ -3,18 +3,18 @@
 @section('content')
 
 @php
-    use Illuminate\Support\Facades\Route;
+    $cur = $agent->currency();
+    $m = fn ($a) => \App\Support\AgentMoney::format($a, $cur);
+    $has = fn ($r) => \Illuminate\Support\Facades\Route::has($r);
 
-    // Route না থাকলে বাটন দেখাবে না, তাই পেজ ভাঙবে না
     $menu = collect([
-        ['agent.deposits.create',   'fa-solid fa-circle-plus',          'Deposit',            'Add balance from company'],
-        ['agent.deposits.index',    'fa-solid fa-clock-rotate-left',    'Deposit History',    'Your deposit requests'],
-        ['agent.recharge.search',   'fa-solid fa-magnifying-glass',     'Public User Search', 'Find a user by ID'],
-        ['agent.recharge.create',   'fa-solid fa-bolt',                 'Recharge',           'Recharge a user'],
-        ['agent.recharge.history',  'fa-solid fa-receipt',              'Recharge History',   'Recharges you made'],
-        ['agent.commission.index',  'fa-solid fa-percent',              'Commission',         'Your commission'],
-        ['agent.transactions.index','fa-solid fa-list-ul',              'Transactions',       'Full ledger'],
-    ])->filter(fn ($m) => Route::has($m[0]));
+        ['agent.deposits.create',    'fa-solid fa-circle-plus',       'Buy Balance',        'Add balance from company'],
+        ['agent.deposits.index',     'fa-solid fa-clock-rotate-left', 'Deposit History',    'Your deposit requests'],
+        ['agent.recharge.search',    'fa-solid fa-magnifying-glass',  'Public User Search', 'Find a user by ID'],
+        ['agent.recharge.create',    'fa-solid fa-bolt',              'Recharge',           'Recharge a user'],
+        ['agent.recharge.history',   'fa-solid fa-receipt',           'Recharge History',   'Recharges you made'],
+        ['agent.transactions.index', 'fa-solid fa-list-ul',           'Transactions',       'Full ledger'],
+    ])->filter(fn ($i) => $has($i[0]));
 
     $statusColor = ['pending' => 'amber', 'approved' => 'green', 'rejected' => 'red', 'completed' => 'green', 'reversed' => 'gray'];
 @endphp
@@ -41,25 +41,27 @@
     @endif
 
     @if($agent->isOperational() && (float) $money['balance'] <= 0)
-        <div class="ag-notice warn"><i class="fa-solid fa-wallet"></i> Your recharge balance is <strong>$0.00</strong>. Send a deposit request to the company first, then you can recharge users.</div>
+        <div class="ag-notice warn"><i class="fa-solid fa-wallet"></i> Your recharge balance is <strong>{{ $m(0) }}</strong>. Buy balance from the company first, then you can recharge users.</div>
     @endif
 
-    {{-- Money --}}
+    @if((float) $agent->discount_percent > 0)
+        <div class="ag-notice ok"><i class="fa-solid fa-tags"></i> You get <strong>{{ (float) $agent->discount_percent + 0 }}% discount</strong> when you buy balance from the company.</div>
+    @endif
+
     <div class="ag-grid ag-g4">
-        <div class="ag-card ag-stat"><div class="ag-ico green"><i class="fa-solid fa-wallet"></i></div><div><h3>${{ number_format($money['balance'], 2) }}</h3><p>Recharge Balance</p></div></div>
-        <div class="ag-card ag-stat"><div class="ag-ico blue"><i class="fa-solid fa-building-columns"></i></div><div><h3>${{ number_format($money['total_deposited'], 2) }}</h3><p>Total Deposited</p></div></div>
-        <div class="ag-card ag-stat"><div class="ag-ico purple"><i class="fa-solid fa-bolt"></i></div><div><h3>${{ number_format($money['total_recharged'], 2) }}</h3><p>Total Recharged ({{ $money['recharge_count'] }})</p></div></div>
-        <div class="ag-card ag-stat"><div class="ag-ico amber"><i class="fa-solid fa-hourglass-half"></i></div><div><h3>${{ number_format($money['pending_deposit'], 2) }}</h3><p>Pending Deposit ({{ $money['pending_count'] }})</p></div></div>
+        <div class="ag-card ag-stat"><div class="ag-ico green"><i class="fa-solid fa-wallet"></i></div><div><h3>{{ $m($money['balance']) }}</h3><p>Recharge Balance</p>@if($usd = \App\Support\AgentMoney::usd($money['balance'], $cur))<small>{{ $usd }} · Converted View</small>@endif</div></div>
+        <div class="ag-card ag-stat"><div class="ag-ico blue"><i class="fa-solid fa-building-columns"></i></div><div><h3>{{ $m($money['total_deposited']) }}</h3><p>Total Balance Bought</p></div></div>
+        <div class="ag-card ag-stat"><div class="ag-ico purple"><i class="fa-solid fa-bolt"></i></div><div><h3>{{ $m($money['total_recharged']) }}</h3><p>Total Recharged ({{ $money['recharge_count'] }})</p></div></div>
+        <div class="ag-card ag-stat"><div class="ag-ico amber"><i class="fa-solid fa-hourglass-half"></i></div><div><h3>{{ $m($money['pending_deposit']) }}</h3><p>Pending Request ({{ $money['pending_count'] }})</p></div></div>
     </div>
 
     <div class="ag-grid ag-g2">
-        <div class="ag-card ag-stat"><div class="ag-ico teal"><i class="fa-solid fa-calendar-day"></i></div><div><h3>${{ number_format($money['today_recharged'], 2) }}</h3><p>Recharged Today</p></div></div>
-        <div class="ag-card ag-stat"><div class="ag-ico amber"><i class="fa-solid fa-percent"></i></div><div><h3>${{ number_format($money['commission'], 2) }}</h3><p>Commission Earned</p></div></div>
+        <div class="ag-card ag-stat"><div class="ag-ico teal"><i class="fa-solid fa-calendar-day"></i></div><div><h3>{{ $m($money['today_recharged']) }}</h3><p>Recharged Today</p></div></div>
+        <div class="ag-card ag-stat"><div class="ag-ico amber"><i class="fa-solid fa-percent"></i></div><div><h3>{{ (float) $agent->discount_percent + 0 }}%</h3><p>Your Discount</p></div></div>
     </div>
 
-    <div class="ag-notice"><i class="fa-solid fa-circle-info"></i> Your <strong>Recharge Balance</strong> is separate from a user's Investment Wallet. A recharge deducts from your balance and credits the user's wallet.</div>
+    <div class="ag-notice"><i class="fa-solid fa-circle-info"></i> Your <strong>Recharge Balance</strong> is separate from a user's Investment Wallet. A recharge deducts from your balance and credits the user's wallet. You can recharge users whose wallet currency is {{ $cur }}.</div>
 
-    {{-- Quick menu --}}
     @if($menu->count())
         <div class="ag-panel">
             <div class="ag-head"><div><h3>Quick Actions</h3></div></div>
@@ -72,10 +74,9 @@
     @endif
 
     <div class="ag-grid ag-g2">
-        {{-- Recent recharges --}}
         <div class="ag-panel">
             <div class="ag-head"><div><h3>Recent Recharges</h3></div>
-                @if(Route::has('agent.recharge.history'))<a class="ag-btn ghost sm" href="{{ route('agent.recharge.history') }}">View all</a>@endif
+                @if($has('agent.recharge.history'))<a class="ag-btn ghost sm" href="{{ route('agent.recharge.history') }}">View all</a>@endif
             </div>
             @if($recentRecharges->count())
                 <div class="ag-table-wrap">
@@ -85,7 +86,7 @@
                         @foreach($recentRecharges as $r)
                             <tr>
                                 <td>{{ $r->user?->name ?? 'User' }}<small>#{{ $r->user_id }} · {{ $r->created_at->diffForHumans() }}</small></td>
-                                <td class="num">${{ number_format($r->amount, 2) }}</td>
+                                <td class="num">{{ $m($r->amount) }}</td>
                                 <td><span class="ag-badge {{ $statusColor[$r->status] ?? 'gray' }}">{{ ucfirst($r->status) }}</span></td>
                             </tr>
                         @endforeach
@@ -97,20 +98,19 @@
             @endif
         </div>
 
-        {{-- Recent deposits --}}
         <div class="ag-panel">
-            <div class="ag-head"><div><h3>Recent Deposits</h3></div>
-                @if(Route::has('agent.deposits.index'))<a class="ag-btn ghost sm" href="{{ route('agent.deposits.index') }}">View all</a>@endif
+            <div class="ag-head"><div><h3>Recent Balance Requests</h3></div>
+                @if($has('agent.deposits.index'))<a class="ag-btn ghost sm" href="{{ route('agent.deposits.index') }}">View all</a>@endif
             </div>
             @if($recentDeposits->count())
                 <div class="ag-table-wrap">
                     <table class="ag-table">
-                        <thead><tr><th>Method</th><th class="num">Amount</th><th>Status</th></tr></thead>
+                        <thead><tr><th>Method</th><th class="num">Balance</th><th>Status</th></tr></thead>
                         <tbody>
                         @foreach($recentDeposits as $d)
                             <tr>
                                 <td>{{ strtoupper($d->method) }}<small>{{ $d->transaction_id }} · {{ $d->created_at->diffForHumans() }}</small></td>
-                                <td class="num">${{ number_format($d->amount, 2) }}</td>
+                                <td class="num">{{ $m($d->amount) }}</td>
                                 <td><span class="ag-badge {{ $statusColor[$d->status] ?? 'gray' }}">{{ ucfirst($d->status) }}</span></td>
                             </tr>
                         @endforeach
@@ -118,12 +118,11 @@
                     </table>
                 </div>
             @else
-                <div class="ag-empty"><i class="fa-solid fa-inbox"></i>No deposit requests yet.</div>
+                <div class="ag-empty"><i class="fa-solid fa-inbox"></i>No requests yet.</div>
             @endif
         </div>
     </div>
 
-    {{-- Research + Areas (আগের ফিচার) --}}
     <div class="ag-grid ag-g2">
         <div class="ag-panel">
             <div class="ag-head"><div><h3>Assigned Areas</h3></div></div>
@@ -135,15 +134,10 @@
         </div>
         <div class="ag-panel">
             <div class="ag-head"><div><h3>Status</h3></div></div>
-            <p style="margin:0 0 10px;">
+            <p style="margin:0;">
                 <span class="ag-badge {{ $agent->is_verified ? 'blue' : 'gray' }}">{{ $agent->is_verified ? 'Verified' : 'Not verified' }}</span>
                 <span class="ag-badge {{ $agent->is_available ? 'teal' : 'gray' }}">{{ $agent->is_available ? 'Available' : 'Unavailable' }}</span>
             </p>
-            <p style="font-size:12.5px;color:var(--muted);margin:0 0 6px;">
-                Research: {{ $counts['pending'] ?? 0 }} pending · {{ ($counts['accepted'] ?? 0) + ($counts['in_progress'] ?? 0) }} in progress · {{ $counts['completed'] ?? 0 }} completed
-                @if(Route::has('agent.messages.index')) · <a href="{{ route('agent.messages.index') }}">{{ $unread }} unread</a>@endif
-            </p>
-            <p style="font-size:12.5px;color:var(--muted);margin:0;">Add your payment methods in <a href="{{ route('agent.profile.index') }}">My Profile</a>.</p>
         </div>
     </div>
 </div>

@@ -74,5 +74,10 @@ class Agent extends Model
 public function deposits()     { return $this->hasMany(AgentDeposit::class); }
 public function recharges()    { return $this->hasMany(AgentRecharge::class); }
 public function transactions() { return $this->hasMany(AgentTransaction::class); }
+/** এজেন্টের Recharge Balance-এর কারেন্সি (না থাকলে তার Home currency) */
+public function currency(): string
+{
+    return strtoupper($this->recharge_currency ?: ($this->user?->walletCurrency() ?: 'BDT'));
+}
 
 }

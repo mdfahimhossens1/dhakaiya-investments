@@ -12,10 +12,13 @@
     <div class="inv-heading">
         <div>
             <h2>My Shares</h2>
-            <p>View your holdings and resell shares.</p>
+            <p>View your holdings and resell shares to other members.</p>
         </div>
 
-        <span class="inv-badge"><i class="fas fa-chart-pie"></i> My Portfolio</span>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <a href="{{ route('user.marketplace.index') }}" class="inv-btn outline small"><i class="fas fa-store"></i> Marketplace</a>
+            <span class="inv-badge"><i class="fas fa-chart-pie"></i> My Portfolio</span>
+        </div>
     </div>
 
     @if(session('success'))
@@ -50,7 +53,7 @@
             <div class="icon"><i class="fas fa-layer-group"></i></div>
             <div class="label">Total Shares</div>
             <h3>{{ number_format($summary['total_shares']) }}</h3>
-            <small>{{ number_format($summary['locked_shares']) }} locked</small>
+            <small>{{ number_format($summary['locked_shares']) }} locked · {{ number_format($summary['listed_shares']) }} on sale</small>
         </div>
 
         <div class="inv-stat">
@@ -104,13 +107,14 @@
 
         <div class="inv-table-wrap">
 
-            <table class="inv-table" style="min-width:950px;">
+            <table class="inv-table" style="min-width:1000px;">
 
                 <thead>
                     <tr>
                         <th>Project</th>
                         <th>Shares</th>
                         <th>Locked</th>
+                        <th>On Sale</th>
                         <th>Sellable</th>
                         <th>Invested (BDT)</th>
                         <th>Current Value (BDT)</th>
@@ -124,7 +128,8 @@
                     @forelse($shares as $share)
 
                         @php
-                            $sellable = max(0, (int) $share->shares - (int) $share->locked_shares);
+                            $listed = (int) $share->listed_shares;
+                            $sellable = max(0, (int) $share->shares - (int) $share->locked_shares - $listed);
                             $isActive = $share->shares > 0;
                         @endphp
 
@@ -143,6 +148,7 @@
 
                             <td><strong>{{ number_format($share->shares) }}</strong></td>
                             <td>{{ number_format($share->locked_shares) }}</td>
+                            <td>{{ number_format($listed) }}</td>
                             <td>{{ number_format($sellable) }}</td>
                             <td>{{ number_format((float) $share->invested_bdt, 2) }}</td>
                             <td>{{ number_format((float) $share->current_value, 2) }}</td>
@@ -154,14 +160,11 @@
                             </td>
 
                             <td>
-                                @if($isActive && $sellable > 0 && $share->project && $walletOptions->count() > 0)
-                                    <button type="button" class="inv-btn outline small"
-                                            onclick="openSellModal(this)"
-                                            data-action="{{ route('user.my-shares.sell', $share->project_id) }}"
-                                            data-name="{{ $share->project->name }}"
-                                            data-max="{{ $sellable }}">
-                                        <i class="fas fa-hand-holding-usd"></i> Resell
-                                    </button>
+                                @if($isActive && $sellable > 0 && $share->project)
+                                    <a href="{{ route('user.resell.index', ['project' => $share->project_id]) }}"
+                                       class="inv-btn outline small">
+                                        <i class="fas fa-store"></i> Resell
+                                    </a>
                                 @else
                                     <span style="color:var(--muted);">—</span>
                                 @endif
@@ -171,7 +174,7 @@
                     @empty
 
                         <tr>
-                            <td colspan="8">
+                            <td colspan="9">
                                 <div class="inv-empty">
                                     <div class="icon"><i class="fas fa-folder-open"></i></div>
                                     <h4>No Share Holdings Found</h4>
@@ -204,92 +207,13 @@
         <div>
             <h5>Important Information</h5>
             <p>
-                Locked shares cannot be resold. Resale proceeds are credited to the wallet
-                you select, at the current exchange rate. Current value is an estimate and
-                may change.
+                You can resell your shares to other members through the marketplace at a price you choose.
+                Locked shares and shares already posted for sale cannot be resold again. Selling shares
+                directly back to the company is not available. Current value is an estimate and may change.
             </p>
         </div>
     </div>
 
 </div>
-
-
-{{-- Resell Modal --}}
-<div class="inv-modal" id="sellModal">
-    <div class="inv-modal-box">
-
-        <div class="inv-modal-head">
-            <h3>Resell Shares</h3>
-            <button type="button" class="inv-modal-close" onclick="closeSellModal()">&times;</button>
-        </div>
-
-        <form method="POST" id="sellForm" onsubmit="return confirm('Confirm resale?')">
-            @csrf
-
-            <div class="inv-modal-body">
-
-                <p style="font-size:13px; color:var(--text); margin:0 0 16px;">
-                    Project: <strong id="sellProjectName"></strong>
-                </p>
-
-                <div class="inv-field">
-                    <label>Number of Shares</label>
-                    <input type="number" name="shares" id="sellShares" min="1" required>
-                    <small class="inv-help" id="sellMaxHelp"></small>
-                </div>
-
-                <div class="inv-field">
-                    <label>Receive In (Wallet)</label>
-                    <select name="currency" required>
-                        @foreach($walletOptions as $w)
-                            <option value="{{ $w['currency'] }}">
-                                {{ $w['currency'] }} — Balance: {{ number_format((float) $w['balance'], 2) }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-            </div>
-
-            <div class="inv-modal-foot">
-                <button type="button" class="inv-btn outline" onclick="closeSellModal()">Cancel</button>
-                <button type="submit" class="inv-btn primary">Confirm Resale</button>
-            </div>
-        </form>
-
-    </div>
-</div>
-
-<script>
-    function openSellModal(btn) {
-        const modal = document.getElementById('sellModal');
-        const max = btn.dataset.max;
-
-        document.getElementById('sellForm').action = btn.dataset.action;
-        document.getElementById('sellProjectName').textContent = btn.dataset.name;
-
-        const input = document.getElementById('sellShares');
-        input.max = max;
-        input.value = 1;
-
-        document.getElementById('sellMaxHelp').textContent = 'Maximum sellable: ' + Number(max).toLocaleString();
-
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-    }
-
-    function closeSellModal() {
-        document.getElementById('sellModal').classList.remove('active');
-        document.body.style.overflow = '';
-    }
-
-    document.getElementById('sellModal').addEventListener('click', function (e) {
-        if (e.target === this) closeSellModal();
-    });
-
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') closeSellModal();
-    });
-</script>
 
 @endsection

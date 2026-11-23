@@ -13,7 +13,7 @@ class TransactionHistoryController extends Controller
         'withdrawal' => ['withdraw', 'withdraw_refund'],
         'transfer' => ['transfer_in', 'transfer_out'],
         'income' => ['daily_profit', 'referral_commission', 'reward'],
-        'share' => ['share_buy', 'share_sell'],
+        'share' => ['share_buy', 'share_sell', 'p2p_buy', 'p2p_sell'],
     ];
 
     public function index(Request $request)

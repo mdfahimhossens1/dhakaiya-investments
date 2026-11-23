@@ -5,6 +5,7 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\AgentDeposit;
 use App\Services\AgentBalanceService;
+use App\Support\AgentMoney;
 use App\Support\Notify;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,7 @@ class AgentDepositController extends Controller
 {
     public function index(Request $request)
     {
-        $deposits = AgentDeposit::with(['agent.user:id,name,phone', 'reviewer:id,name'])
+        $deposits = AgentDeposit::with(['agent.user', 'reviewer:id,name'])
             ->when(
                 in_array($request->status, ['pending', 'approved', 'rejected'], true),
                 fn ($q) => $q->where('status', $request->status)
@@ -35,9 +36,10 @@ class AgentDepositController extends Controller
 
         $stats = [
             'pending_count' => AgentDeposit::pending()->count(),
-            'pending_total' => (string) AgentDeposit::pending()->sum('amount'),
-            'approved_today' => (string) AgentDeposit::where('status', 'approved')
-                ->whereDate('reviewed_at', today())->sum('approved_amount'),
+            'pending_total' => AgentDeposit::pending()
+                ->selectRaw('currency, SUM(payable_amount) as total')->groupBy('currency')->pluck('total', 'currency')->all(),
+            'approved_today' => AgentDeposit::where('status', 'approved')->whereDate('reviewed_at', today())
+                ->selectRaw('currency, SUM(approved_amount) as total')->groupBy('currency')->pluck('total', 'currency')->all(),
             'rejected_count' => AgentDeposit::where('status', 'rejected')->count(),
         ];
 
@@ -47,7 +49,7 @@ class AgentDepositController extends Controller
     public function approve(Request $request, AgentDeposit $agentDeposit, AgentBalanceService $balances)
     {
         $data = $request->validate([
-            // অনুরোধের চেয়ে বেশি approve করা যাবে না (টাইপো আটকাতে)
+            // ব্যালেন্সের মূল্য; অনুরোধের চেয়ে বেশি দেওয়া যাবে না (টাইপো আটকাতে)
             'approved_amount' => ['nullable', 'numeric', 'gt:0', 'max:' . $agentDeposit->amount, 'decimal:0,2'],
             'admin_note' => ['nullable', 'string', 'max:500'],
         ]);
@@ -61,10 +63,13 @@ class AgentDepositController extends Controller
                 }
 
                 $amount = number_format((float) ($data['approved_amount'] ?? $deposit->amount), 2, '.', '');
+                $disc = (string) $deposit->discount_percent;
+                $payable = bcsub($amount, bcdiv(bcmul($amount, $disc, 6), '100', 2), 2);
 
                 $deposit->update([
                     'status' => 'approved',
                     'approved_amount' => $amount,
+                    'payable_amount' => $payable,
                     'admin_note' => $data['admin_note'] ?? null,
                     'reviewed_by' => auth()->id(),
                     'reviewed_at' => now(),
@@ -79,16 +84,17 @@ class AgentDepositController extends Controller
         $agentDeposit->refresh()->load('agent.user');
 
         if ($agentDeposit->agent?->user) {
+            $cur = $agentDeposit->currency ?: $agentDeposit->agent->currency();
+
             Notify::user(
                 $agentDeposit->agent->user,
-                'Deposit Approved',
-                'Your deposit of $' . number_format($agentDeposit->approved_amount, 2)
-                    . ' has been approved and added to your recharge balance.',
+                'Balance Approved',
+                'Your recharge balance of ' . AgentMoney::format($agentDeposit->approved_amount, $cur) . ' has been added.',
                 'success'
             );
         }
 
-        return back()->with('success', 'Deposit approved এবং এজেন্টের Recharge Balance-এ যোগ হয়েছে।');
+        return back()->with('success', 'Approved: এজেন্টের Recharge Balance-এ যোগ হয়েছে।');
     }
 
     public function reject(Request $request, AgentDeposit $agentDeposit)
@@ -114,10 +120,12 @@ class AgentDepositController extends Controller
         $agentDeposit->refresh()->load('agent.user');
 
         if ($agentDeposit->agent?->user) {
+            $cur = $agentDeposit->currency ?: $agentDeposit->agent->currency();
+
             Notify::user(
                 $agentDeposit->agent->user,
-                'Deposit Rejected',
-                'Your deposit of $' . number_format($agentDeposit->amount, 2)
+                'Balance Request Rejected',
+                'Your balance request of ' . AgentMoney::format($agentDeposit->amount, $cur)
                     . ' was rejected. Reason: ' . $data['admin_note'],
                 'danger'
             );

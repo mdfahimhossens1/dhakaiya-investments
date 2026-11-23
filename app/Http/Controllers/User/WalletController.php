@@ -321,7 +321,7 @@ public function index()
 
         $withdrawalSummary = [
             // তোলার মতো ব্যালেন্স = শুধু আয় (profit, commission, reward)
-            'available_balance' => $wallet->withdrawable_balance,
+            'available_balance' => $wallet->$wallet->balance,
             'principal_balance' => $wallet->principal_balance,
             'total_balance' => $wallet->balance,
             'minimum_withdrawal' => $this->minAmount('withdraw', $currency),
@@ -385,14 +385,11 @@ public function index()
 
         $amount = number_format((float) $data['amount'], 2, '.', '');
 
-        // শুধু আয়ের অংশ তোলা যায় (Deposit ও রিসেলের টাকা নয়)
+        // ওয়ালেটের পুরো ব্যালেন্সই তোলা যায়
         $wallet = Wallet::where('user_id', $user->id)->where('currency', $currency)->first();
 
-        if (! $wallet || bccomp((string) $wallet->withdrawable_balance, $amount, 2) < 0) {
-            return back()->withInput()->with(
-                'error',
-                'আপনার তোলার মতো (আয়ের) ব্যালেন্স যথেষ্ট নেই। Deposit ও শেয়ার রিসেলের টাকা শুধু শেয়ার কেনায় ব্যবহার করা যায়।'
-            );
+        if (! $wallet || bccomp((string) $wallet->balance, $amount, 2) < 0) {
+            return back()->withInput()->with('error', 'আপনার ওয়ালেটে যথেষ্ট ব্যালেন্স নেই।');
         }
 
         $feePercent = (string) ($pm->withdraw_fee_percent ?? 0);

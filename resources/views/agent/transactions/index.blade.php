@@ -2,7 +2,11 @@
 @section('title', 'Transactions')
 @section('content')
 
-@php $labels = ['deposit' => 'Deposit', 'recharge' => 'Recharge', 'commission' => 'Commission', 'adjustment' => 'Adjustment']; @endphp
+@php
+    $cur = $agent->currency();
+    $m = fn ($a) => \App\Support\AgentMoney::format($a, $cur);
+    $labels = ['deposit' => 'Balance Purchase', 'recharge' => 'Recharge', 'commission' => 'Commission', 'adjustment' => 'Adjustment'];
+@endphp
 
 <div class="page-heading">
     <div><h2>Transactions</h2><p>Full ledger of your recharge balance.</p></div>
@@ -12,8 +16,7 @@
 @include('partials.agent-flash')
 
 <div class="ag-wrap">
-    <div class="ag-notice"><i class="fa-solid fa-wallet"></i> Current Recharge Balance: <strong>${{ number_format($agent->recharge_balance, 2) }}</strong></div>
-
+<div class="ag-notice"><i class="fa-solid fa-wallet"></i> Current Recharge Balance: <strong>{{ $m($agent->recharge_balance) }}</strong>@if($usd = \App\Support\AgentMoney::usd($agent->recharge_balance, $cur)) <small>({{ $usd }} · Converted View)</small>@endif</div>
     <div class="ag-panel">
         <form method="GET" class="ag-filter" style="margin-bottom:18px;">
             <div class="ag-field">
@@ -41,9 +44,9 @@
                             <td><span class="ag-badge {{ $t->direction === 'credit' ? 'green' : 'amber' }}">{{ $labels[$t->type] ?? ucfirst($t->type) }}</span></td>
                             <td>{{ $t->description ?: '—' }}</td>
                             <td class="num" style="color:{{ $t->direction === 'credit' ? '#087f5b' : '#b45309' }};font-weight:700;">
-                                {{ $t->direction === 'credit' ? '+' : '−' }}${{ number_format($t->amount, 2) }}
+                                {{ $t->direction === 'credit' ? '+' : '−' }}{{ $m($t->amount) }}
                             </td>
-                            <td class="num">${{ number_format($t->balance_after, 2) }}</td>
+                            <td class="num">{{ $m($t->balance_after) }}</td>
                         </tr>
                     @endforeach
                     </tbody>

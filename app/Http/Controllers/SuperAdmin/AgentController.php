@@ -17,13 +17,12 @@ use Illuminate\Validation\Rule;
 
 class AgentController extends Controller
 {
-       public function index(Request $request)
+          public function index(Request $request)
     {
         $q        = trim((string) $request->query('q'));
         $approval = $request->query('approval');
 
-        $agents = Agent::with(['user:id,name,email,phone', 'districts.country'])
-            ->withCount('requests')
+        $agents = Agent::with(['user', 'districts.country'])
             ->when($q !== '', fn ($query) => $query->whereHas('user', fn ($u) => $u->where(
                 fn ($x) => $x->where('name', 'like', "%{$q}%")
                     ->orWhere('email', 'like', "%{$q}%")
@@ -40,10 +39,11 @@ class AgentController extends Controller
         $stats = [
             'total'            => Agent::count(),
             'pending'          => Agent::where('approval_status', 'pending')->count(),
-            'verified'         => Agent::where('is_verified', true)->count(),
             'active'           => Agent::where('is_active', true)->where('approval_status', 'approved')->count(),
-            // সব এজেন্টের হাতে থাকা মোট Recharge Balance (কোম্পানির দায়)
-            'total_balance'    => (string) Agent::sum('recharge_balance'),
+            // কারেন্সি অনুযায়ী আলাদা, কারণ ভিন্ন কারেন্সি যোগ করা যায় না
+            'total_balance'    => Agent::where('recharge_balance', '>', 0)
+                ->selectRaw('recharge_currency, SUM(recharge_balance) as total')
+                ->groupBy('recharge_currency')->pluck('total', 'recharge_currency')->all(),
             'pending_deposits' => AgentDeposit::where('status', 'pending')->count(),
         ];
 
@@ -54,25 +54,31 @@ class AgentController extends Controller
     {
         $agent->load(['user', 'districts.country', 'paymentMethods']);
 
-        $counts = $agent->requests()
-            ->selectRaw('status, COUNT(*) as c')
-            ->groupBy('status')
-            ->pluck('c', 'status');
-
-        $recent = $agent->requests()->with('user:id,name')->latest()->limit(8)->get();
-
         $money = [
+            'currency'        => $agent->currency(),
+            'discount'        => (string) $agent->discount_percent,
             'balance'         => (string) $agent->recharge_balance,
-            'total_deposited' => (string) $agent->deposits()->where('status', 'approved')->sum('amount'),
+            'total_deposited' => (string) $agent->deposits()->where('status', 'approved')->sum('approved_amount'),
             'pending_deposit' => (string) $agent->deposits()->where('status', 'pending')->sum('amount'),
             'total_recharged' => (string) $agent->recharges()->where('status', 'completed')->sum('amount'),
             'recharge_count'  => $agent->recharges()->where('status', 'completed')->count(),
-            'commission'      => (string) $agent->transactions()->where('type', 'commission')->sum('amount'),
         ];
 
         $recentTransactions = $agent->transactions()->latest()->limit(10)->get();
 
-        return view('super-admin.agents.show', compact('agent', 'counts', 'recent', 'money', 'recentTransactions'));
+        return view('super-admin.agents.show', compact('agent', 'money', 'recentTransactions'));
+    }
+
+    /** ব্যালেন্স কেনার ছাড় (%) ঠিক করা; শুধু নতুন রিকোয়েস্টে প্রযোজ্য */
+    public function discount(Request $request, Agent $agent)
+    {
+        $data = $request->validate([
+            'discount_percent' => ['required', 'numeric', 'min:0', 'max:100', 'decimal:0,2'],
+        ]);
+
+        $agent->forceFill(['discount_percent' => $data['discount_percent']])->save();
+
+        return back()->with('success', 'Discount updated: ' . ($data['discount_percent'] + 0) . '%. নতুন ডিপোজিট রিকোয়েস্টে প্রযোজ্য হবে।');
     }
 
     public function create()

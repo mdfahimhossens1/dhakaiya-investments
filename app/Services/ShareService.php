@@ -16,29 +16,30 @@ class ShareService
     {
     }
 
-       /** 1 unit কারেন্সি = কত BDT। আগে Admin-এর DB, না থাকলে .env। কোনোটাই না থাকলে null */
-  public function rate(string $currency): ?string
-{
-    $currency = strtoupper($currency);
+    /** 1 unit কারেন্সি = কত BDT। আগে Admin-এর DB, না থাকলে .env। কোনোটাই না থাকলে null */
+    public function rate(string $currency): ?string
+    {
+        $currency = strtoupper($currency);
 
-    if ($currency === 'BDT') {
-        return '1';
+        if ($currency === 'BDT') {
+            return '1';
+        }
+
+        $rate = CurrencyRate::rateFor($currency)
+            ?? config("exchange.rates.{$currency}");
+
+        if (
+            $rate === null ||
+            $rate === '' ||
+            !is_numeric($rate) ||
+            (float) $rate <= 0
+        ) {
+            return null;
+        }
+
+        return (string) $rate;
     }
 
-    $rate = CurrencyRate::rateFor($currency)
-        ?? config("exchange.rates.{$currency}");
-
-    if (
-        $rate === null ||
-        $rate === '' ||
-        !is_numeric($rate) ||
-        (float) $rate <= 0
-    ) {
-        return null;
-    }
-
-    return (string) $rate;
-}
     /** এক কারেন্সির অঙ্ক অন্য কারেন্সিতে (নিচে ছাঁটা)। rate না থাকলে null */
     public function convertAmount(string $amount, string $from, string $to): ?string
     {
@@ -68,6 +69,11 @@ class ShareService
 
     public function buy(User $user, Project $project, int $shares, string $currency): ShareOrder
     {
+        // এজেন্ট (বা অন্য কোনো রোল) শেয়ার কিনতে পারবে না, শুধু সাধারণ ইউজার
+        if ($user->role !== 'user') {
+            throw new ShareException('এই অ্যাকাউন্ট দিয়ে শেয়ার কেনা যায় না।');
+        }
+
         $currency = strtoupper($currency);
         $rate = $this->rate($currency);
 
@@ -148,8 +154,16 @@ class ShareService
 
     /* ================================================================ */
 
+    /**
+     * কোম্পানিকে সরাসরি রিসেল। ক্লায়েন্টের নিয়মে এখন বন্ধ; শুধু মার্কেটপ্লেসে অন্য সদস্যদের কাছে বিক্রি।
+     * আবার চালু করতে .env-এ COMPANY_BUYBACK_ENABLED=true দিন।
+     */
     public function sell(User $user, Project $project, int $shares, string $currency): ShareOrder
     {
+        if (! config('exchange.company_buyback_enabled', false)) {
+            throw new ShareException('কোম্পানিকে সরাসরি রিসেল বন্ধ আছে। অন্য সদস্যদের কাছে বিক্রি করতে Resell Share ব্যবহার করুন।');
+        }
+
         $currency = strtoupper($currency);
         $rate = $this->rate($currency);
 
@@ -177,11 +191,11 @@ class ShareService
                 throw new ShareException('আপনার এই প্রজেক্টে কোনো শেয়ার নেই।');
             }
 
-            $sellable = $holding->shares - $holding->locked_shares;
+            $sellable = $holding->shares - $holding->locked_shares - (int) $holding->listed_shares;
 
             if ($shares > $sellable) {
                 throw new ShareException(
-                    "আপনি সর্বোচ্চ {$sellable}টি শেয়ার রিসেল করতে পারবেন (বাকিগুলো Lock করা)।"
+                    "আপনি সর্বোচ্চ {$sellable}টি শেয়ার রিসেল করতে পারবেন (বাকিগুলো Lock বা মার্কেটপ্লেসে পোস্ট করা)।"
                 );
             }
 
@@ -297,20 +311,19 @@ class ShareService
     }
 
     /** ইউজারের নিজের দেশের কারেন্সি + রেট। রেট না থাকলে null */
-public function home(User $user): ?array
-{
-    $currency = $user->walletCurrency();
-    $rate = $this->rate($currency);
+    public function home(User $user): ?array
+    {
+        $currency = $user->walletCurrency();
+        $rate = $this->rate($currency);
 
-    return $rate ? ['currency' => $currency, 'rate' => $rate] : null;
-}
+        return $rate ? ['currency' => $currency, 'rate' => $rate] : null;
+    }
 
-/** BDT অঙ্ককে নির্দিষ্ট কারেন্সিতে দেখানো (নিচে রাউন্ড) */
-public function fromBdt(string $bdt, string $currency): ?string
-{
-    $rate = $this->rate($currency);
+    /** BDT অঙ্ককে নির্দিষ্ট কারেন্সিতে দেখানো (নিচে রাউন্ড) */
+    public function fromBdt(string $bdt, string $currency): ?string
+    {
+        $rate = $this->rate($currency);
 
-    return $rate ? bcdiv($bdt, $rate, 2) : null;
-}
-
+        return $rate ? bcdiv($bdt, $rate, 2) : null;
+    }
 }

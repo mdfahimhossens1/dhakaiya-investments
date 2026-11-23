@@ -2,12 +2,16 @@
 @section('title', 'Agents')
 @section('content')
 
-@php use Illuminate\Support\Facades\Route; @endphp
+@php
+    $has = fn ($r) => \Illuminate\Support\Facades\Route::has($r);
+    $fmt = fn ($a, $c = null) => \App\Support\AgentMoney::format($a, $c ?: null);
+    $balanceText = collect($stats['total_balance'])->map(fn ($v, $c) => $fmt($v, $c))->implode(' · ') ?: '—';
+@endphp
 
 <div class="page-heading">
     <div><h2>Agents</h2><p>Create, verify and control recharge agents.</p></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        @if(Route::has('super-admin.agent-deposits.index'))
+        @if($has('super-admin.agent-deposits.index'))
             <a href="{{ route('super-admin.agent-deposits.index') }}" class="ag-btn ghost"><i class="fa-solid fa-building-columns"></i> Agent Deposits @if($stats['pending_deposits'])({{ $stats['pending_deposits'] }})@endif</a>
         @endif
         <a href="{{ route('super-admin.agents.create') }}" class="ag-btn"><i class="fa-solid fa-plus"></i> New Agent</a>
@@ -22,7 +26,7 @@
         <div class="ag-card ag-stat"><div class="ag-ico"><i class="fa-solid fa-user-tie"></i></div><div><h3>{{ $stats['total'] }}</h3><p>Total Agents</p></div></div>
         <div class="ag-card ag-stat"><div class="ag-ico amber"><i class="fa-solid fa-hourglass-half"></i></div><div><h3>{{ $stats['pending'] }}</h3><p>Pending Approval</p></div></div>
         <div class="ag-card ag-stat"><div class="ag-ico green"><i class="fa-solid fa-user-check"></i></div><div><h3>{{ $stats['active'] }}</h3><p>Active</p></div></div>
-        <div class="ag-card ag-stat"><div class="ag-ico blue"><i class="fa-solid fa-wallet"></i></div><div><h3>${{ number_format($stats['total_balance'], 2) }}</h3><p>Total Agent Balance</p></div></div>
+        <div class="ag-card ag-stat"><div class="ag-ico blue"><i class="fa-solid fa-wallet"></i></div><div><h3>{{ $balanceText }}</h3><p>Total Agent Balance</p></div></div>
     </div>
 
     <div class="ag-panel">
@@ -44,7 +48,7 @@
             <div class="ag-table-wrap">
                 <table class="ag-table">
                     <thead>
-                        <tr><th>Agent</th><th>Areas</th><th class="num">Recharge Balance</th><th>Approval</th><th>Verified</th><th>Status</th><th>Quick actions</th><th></th></tr>
+                        <tr><th>Agent</th><th>Areas</th><th class="num">Recharge Balance</th><th>Discount (%)</th><th>Approval</th><th>Verified</th><th>Status</th><th>Quick actions</th><th></th></tr>
                     </thead>
                     <tbody>
                     @foreach($agents as $a)
@@ -54,7 +58,14 @@
                                 {{ $a->districts->take(3)->pluck('name')->implode(', ') ?: '—' }}
                                 @if($a->districts->count() > 3) <small>+{{ $a->districts->count() - 3 }} more</small> @endif
                             </td>
-                            <td class="num"><strong>${{ number_format($a->recharge_balance, 2) }}</strong></td>
+                            <td class="num"><strong>{{ $fmt($a->recharge_balance, $a->currency()) }}</strong></td>
+                            <td>
+                                <form method="POST" action="{{ route('super-admin.agents.discount', $a) }}" style="display:flex;gap:6px;align-items:center;">
+                                    @csrf @method('PATCH')
+                                    <input type="number" name="discount_percent" min="0" max="100" step="0.01" value="{{ (float) $a->discount_percent + 0 }}" style="width:80px;">
+                                    <button class="ag-btn ghost sm">Save</button>
+                                </form>
+                            </td>
                             <td><span class="ag-badge {{ ['approved'=>'green','pending'=>'amber','rejected'=>'red'][$a->approval_status] ?? 'gray' }}">{{ ucfirst($a->approval_status) }}</span></td>
                             <td>@if($a->is_verified)<span class="ag-badge blue">Verified</span>@else<span class="ag-badge gray">Not verified</span>@endif</td>
                             <td>@if($a->is_active)<span class="ag-badge green">Active</span>@else<span class="ag-badge red">Inactive</span>@endif</td>

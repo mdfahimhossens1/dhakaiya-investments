@@ -32,5 +32,7 @@ return [
     'convert_min' => env('CONVERT_MIN', 1),
 
     'profit_autorun' => env('PROFIT_AUTORUN', false),
+    'p2p_commission_percent' => env('P2P_COMMISSION_PERCENT', 2),
+    'company_buyback_enabled' => env('COMPANY_BUYBACK_ENABLED', false),
 
 ];

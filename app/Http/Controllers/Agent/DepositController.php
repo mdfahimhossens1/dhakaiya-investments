@@ -43,13 +43,12 @@ class DepositController extends BaseAgentController
         }
 
         $data = $request->validate([
-            'amount' => ['required', 'numeric', 'gt:0', 'max:1000000', 'decimal:0,2'],
+            'amount' => ['required', 'numeric', 'gt:0', 'max:100000000', 'decimal:0,2'],
             'method' => ['required', Rule::in(PaymentMethod::pluck('code')->all())],
             'transaction_id' => ['required', 'string', 'max:100'],
             'sender_info' => ['nullable', 'string', 'max:150'],
         ]);
 
-        // একই Transaction ID দুবার ব্যবহার আটকানো (rejected বাদে)
         $used = AgentDeposit::where('method', $data['method'])
             ->where('transaction_id', $data['transaction_id'])
             ->where('status', '!=', 'rejected')
@@ -61,14 +60,27 @@ class DepositController extends BaseAgentController
             ]);
         }
 
-        // স্প্যাম আটকাতে: একসাথে সর্বোচ্চ ৫টা pending
         if ($agent->deposits()->where('status', 'pending')->count() >= 5) {
             return back()->withInput()->with('error', 'আপনার ৫টা ডিপোজিট রিকোয়েস্ট এখনো pending। আগে সেগুলো প্রসেস হতে দিন।');
         }
 
-        $agent->deposits()->create($data + ['status' => 'pending']);
+        // ছাড় এই মুহূর্তের হিসাবে স্থির হয়ে যায় (পরে ছাড় বদলালেও এই রিকোয়েস্টে বদলাবে না)
+        $amount = number_format((float) $data['amount'], 2, '.', '');
+        $discount = (string) $agent->discount_percent;
+        $payable = bcsub($amount, bcdiv(bcmul($amount, $discount, 6), '100', 2), 2);
+
+        $agent->deposits()->create([
+            'amount' => $amount,
+            'method' => $data['method'],
+            'transaction_id' => $data['transaction_id'],
+            'sender_info' => $data['sender_info'] ?? null,
+            'currency' => $agent->currency(),
+            'discount_percent' => $discount,
+            'payable_amount' => $payable,
+            'status' => 'pending',
+        ]);
 
         return redirect()->route('agent.deposits.index')
-            ->with('success', 'Deposit request পাঠানো হয়েছে। Super Admin যাচাই করে Approve করলে ব্যালেন্সে যোগ হবে।');
+            ->with('success', 'Deposit request পাঠানো হয়েছে। Super Admin টাকা যাচাই করে Approve করলে ব্যালেন্সে যোগ হবে।');
     }
 }

@@ -7,34 +7,31 @@ use App\Models\AgentDeposit;
 use App\Models\AgentRecharge;
 use App\Models\AgentTransaction;
 use App\Models\User;
-use App\Support\Currency;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 class AgentBalanceService
 {
-    public function __construct(
-        private WalletService $wallets,
-        private ShareService $shares
-    ) {
+    public function __construct(private WalletService $wallets)
+    {
     }
 
-    /** Approve হওয়া ডিপোজিট: এজেন্টের Recharge Balance বাড়ানো (caller-এর transaction-এর ভেতরে) */
+    /** Approve হওয়া ডিপোজিট: ব্যালেন্সের পুরো মূল্য এজেন্টের Recharge Balance-এ যোগ (caller-এর transaction-এর ভেতরে) */
     public function creditDeposit(AgentDeposit $deposit, string $amount): AgentTransaction
     {
-        return $this->apply(
-            $deposit->agent_id,
-            'credit',
-            'deposit',
-            $amount,
-            $deposit,
-            'Deposit via ' . strtoupper($deposit->method) . ' (TrxID: ' . $deposit->transaction_id . ')'
-        );
+        $note = 'Balance purchase via ' . strtoupper($deposit->method) . ' (TrxID: ' . $deposit->transaction_id . ')';
+
+        if ((float) $deposit->discount_percent > 0) {
+            $note .= ' · ' . ((float) $deposit->discount_percent + 0) . '% discount';
+        }
+
+        return $this->apply($deposit->agent_id, 'credit', 'deposit', $amount, $deposit, $note);
     }
 
     /**
      * ইউজারকে রিচার্জ: এজেন্টের ব্যালেন্স কমে, ইউজারের Wallet-এ যোগ হয়। সবই এক transaction-এ।
+     * এজেন্ট ও ইউজারের কারেন্সি একই হতে হবে, তাই কোনো কনভার্সন নেই।
      *
      * @throws RuntimeException
      * @throws \Illuminate\Database\UniqueConstraintViolationException ($token আগেই ব্যবহৃত হলে)
@@ -51,14 +48,20 @@ class AgentBalanceService
             throw new RuntimeException('এই ইউজারকে রিচার্জ করা যাবে না।');
         }
 
-        [$currency, $walletAmount, $rate] = $this->toWallet($user, $amount);
-
-        return DB::transaction(function () use ($agent, $user, $amount, $token, $currency, $walletAmount, $rate) {
-            // এজেন্ট row লক করে অবস্থা যাচাই (অনুমোদিত, active কিনা)
-            $locked = Agent::whereKey($agent->id)->lockForUpdate()->firstOrFail();
+        return DB::transaction(function () use ($agent, $user, $amount, $token) {
+            $locked = Agent::with('user')->whereKey($agent->id)->lockForUpdate()->firstOrFail();
 
             if (! $locked->isOperational()) {
                 throw new RuntimeException('আপনার এজেন্ট অ্যাকাউন্ট এখন সক্রিয় নয়।');
+            }
+
+            $currency = $this->currencyOf($locked);
+            $userCurrency = strtoupper($user->walletCurrency());
+
+            if ($userCurrency !== $currency) {
+                throw new RuntimeException(
+                    "এই ইউজারের Wallet কারেন্সি {$userCurrency}, কিন্তু আপনার Recharge Balance {$currency}-এ। শুধু একই কারেন্সির ইউজারকে রিচার্জ করা যায়।"
+                );
             }
 
             // token unique, তাই ডুপ্লিকেট হলে এখানেই exception হয়ে সব rollback
@@ -67,8 +70,8 @@ class AgentBalanceService
                 'user_id' => $user->id,
                 'amount' => $amount,
                 'wallet_currency' => $currency,
-                'exchange_rate' => $rate,
-                'wallet_amount' => $walletAmount,
+                'exchange_rate' => '1.000000',
+                'wallet_amount' => $amount,
                 'status' => 'completed',
                 'request_token' => $token,
             ]);
@@ -76,11 +79,11 @@ class AgentBalanceService
             // ১) এজেন্টের Recharge Balance থেকে কাটা (কম থাকলে exception)
             $this->apply($agent->id, 'debit', 'recharge', $amount, $recharge, "Recharge to user #{$user->id}");
 
-            // ২) ইউজারের Investment Wallet-এ যোগ (WalletService দিয়ে, Principal অংশে যায়)
+            // ২) ইউজারের Wallet-এ যোগ (WalletService দিয়ে, Principal অংশে যায়)
             $this->wallets->credit(
                 $user,
                 'agent_recharge',
-                $walletAmount,
+                $amount,
                 $recharge,
                 'Wallet recharge by agent',
                 ['agent_id' => $agent->id],
@@ -92,6 +95,11 @@ class AgentBalanceService
     }
 
     /* ------------------------------------------------------------------ */
+
+    private function currencyOf(Agent $agent): string
+    {
+        return strtoupper($agent->recharge_currency ?: $agent->user->walletCurrency());
+    }
 
     private function apply(
         int $agentId,
@@ -108,7 +116,7 @@ class AgentBalanceService
         }
 
         return DB::transaction(function () use ($agentId, $direction, $type, $amount, $source, $description) {
-            $agent = Agent::whereKey($agentId)->lockForUpdate()->firstOrFail();
+            $agent = Agent::with('user')->whereKey($agentId)->lockForUpdate()->firstOrFail();
 
             $current = (string) $agent->recharge_balance;
 
@@ -122,7 +130,11 @@ class AgentBalanceService
                 $new = bcadd($current, $amount, 2);
             }
 
-            $agent->forceFill(['recharge_balance' => $new])->save();
+            // কারেন্সি প্রথমবার ব্যালেন্স বদলানোর সময় স্থায়ীভাবে ঠিক হয়ে যায়
+            $agent->forceFill([
+                'recharge_balance' => $new,
+                'recharge_currency' => $this->currencyOf($agent),
+            ])->save();
 
             return AgentTransaction::create([
                 'agent_id' => $agentId,
@@ -135,44 +147,5 @@ class AgentBalanceService
                 'description' => $description,
             ]);
         });
-    }
-
-    /**
-     * USD (এজেন্টের ব্যালেন্স) → ইউজারের Wallet কারেন্সি (Home currency)।
-     * ⚠️ নিচের রেট-লজিক আপনার ReferralService::releaseDue()-এর ধরন ধরে লেখা।
-     *    $home['rate'] = Wallet কারেন্সির ১ ইউনিট = কত BDT,
-     *    Currency::rateFromBdt('USD') = ১ BDT = কত USD।
-     *    আপনার আসল Currency/ShareService::home() এর রেটের দিক ভিন্ন হলে শুধু এই method ঠিক করুন।
-     *
-     * @return array{0:string,1:string,2:string} [currency, wallet_amount, usd→wallet rate]
-     */
-    private function toWallet(User $user, string $usd): array
-    {
-        $home = $this->shares->home($user);
-
-        if (! $home) {
-            throw new RuntimeException('এই ইউজারের Wallet কারেন্সির রেট পাওয়া যায়নি।');
-        }
-
-        $currency = $home['currency'];
-
-        if ($currency === 'USD') {
-            return ['USD', $usd, '1.000000'];
-        }
-
-        $usdPerBdt = (string) Currency::rateFromBdt('USD');
-
-        if (bccomp($usdPerBdt, '0', 8) <= 0) {
-            throw new RuntimeException('USD রেট পাওয়া যায়নি।');
-        }
-
-        $bdt = bcdiv($usd, $usdPerBdt, 6);
-        $walletAmount = bcdiv($bdt, (string) $home['rate'], 2);
-
-        if (bccomp($walletAmount, '0', 2) <= 0) {
-            throw new RuntimeException('এই পরিমাণ রিচার্জ করা যাবে না, রূপান্তরের পর পরিমাণ খুব কম।');
-        }
-
-        return [$currency, $walletAmount, bcdiv($walletAmount, $usd, 6)];
     }
 }

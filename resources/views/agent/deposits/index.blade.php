@@ -2,11 +2,15 @@
 @section('title', 'Deposit History')
 @section('content')
 
-@php $color = ['pending' => 'amber', 'approved' => 'green', 'rejected' => 'red']; @endphp
+@php
+    $cur = $agent->currency();
+    $m = fn ($a, $c = null) => \App\Support\AgentMoney::format($a, $c ?: $cur);
+    $color = ['pending' => 'amber', 'approved' => 'green', 'rejected' => 'red'];
+@endphp
 
 <div class="page-heading">
-    <div><h2>Deposit History</h2><p>Your deposit requests to the company.</p></div>
-    <a class="ag-btn" href="{{ route('agent.deposits.create') }}"><i class="fa-solid fa-plus"></i> New Deposit</a>
+    <div><h2>Deposit History</h2><p>Your balance purchase requests to the company.</p></div>
+    <a class="ag-btn" href="{{ route('agent.deposits.create') }}"><i class="fa-solid fa-plus"></i> Buy Balance</a>
 </div>
 
 @include('partials.agent-styles')
@@ -30,15 +34,18 @@
         @if($deposits->count())
             <div class="ag-table-wrap">
                 <table class="ag-table">
-                    <thead><tr><th>Date</th><th>Method</th><th>Transaction ID</th><th class="num">Requested</th><th class="num">Approved</th><th>Status</th><th>Note</th></tr></thead>
+                    <thead><tr><th>Date</th><th>Method</th><th>Transaction ID</th><th class="num">Balance</th><th class="num">Discount</th><th class="num">You Pay</th><th>Status</th><th>Note</th></tr></thead>
                     <tbody>
                     @foreach($deposits as $d)
                         <tr>
                             <td>{{ $d->created_at->format('d M Y') }}<small>{{ $d->created_at->format('h:i A') }}</small></td>
                             <td>{{ strtoupper($d->method) }}</td>
                             <td>{{ $d->transaction_id }}</td>
-                            <td class="num">${{ number_format($d->amount, 2) }}</td>
-                            <td class="num">{{ $d->approved_amount !== null ? '$' . number_format($d->approved_amount, 2) : '—' }}</td>
+                            <td class="num">
+                                {{ $m($d->status === 'approved' ? $d->approved_amount : $d->amount, $d->currency) }}
+                            </td>
+                            <td class="num">{{ (float) $d->discount_percent + 0 }}%</td>
+                            <td class="num">{{ $m($d->payable_amount ?? $d->amount, $d->currency) }}</td>
                             <td><span class="ag-badge {{ $color[$d->status] ?? 'gray' }}">{{ ucfirst($d->status) }}</span></td>
                             <td>{{ $d->admin_note ?: '—' }}</td>
                         </tr>

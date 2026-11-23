@@ -39,6 +39,7 @@ use App\Http\Controllers\User\ResearchRequestController as UserResearchRequestCo
 use App\Http\Controllers\User\WalletConvertController;
 use App\Http\Controllers\User\DashboardController as UserDashboardController;
 use App\Http\Controllers\User\IncomeHistoryController;
+use App\Http\Controllers\User\{ResellController, MarketplaceController};
 
 use App\Http\Controllers\SuperAdmin\CompanyController;
 use App\Http\Controllers\SuperAdmin\UserManagementController;
@@ -444,7 +445,7 @@ Route::get('/agent-performance', [AgentPerformanceController::class, 'index'])->
 Route::get('agent-deposits', [AgentDepositController::class, 'index'])->name('agent-deposits.index');
 Route::patch('agent-deposits/{agentDeposit}/approve', [AgentDepositController::class, 'approve'])->name('agent-deposits.approve');
 Route::patch('agent-deposits/{agentDeposit}/reject', [AgentDepositController::class, 'reject'])->name('agent-deposits.reject');
-
+Route::patch('agents/{agent}/discount', [AgentController::class, 'discount'])->name('agents.discount');
 Route::get('/currency-rates', [CurrencyRateController::class, 'index'])->name('currency-rates.index');
 Route::put('/currency-rates', [CurrencyRateController::class, 'update'])->name('currency-rates.update');
 Route::get('/profit-distribution', [ProfitDistributionController::class, 'index'])->name('profit-distribution.index');
@@ -706,6 +707,14 @@ Route::prefix('research-requests')->name('research.')->controller(UserResearchRe
     Route::patch('/{researchRequest}/payment', 'submitPayment')->name('payment');
     Route::get('/{researchRequest}/report', 'downloadReport')->name('download');
 });
+
+Route::get('resell', [ResellController::class, 'index'])->name('resell.index');
+Route::post('resell', [ResellController::class, 'store'])->name('resell.store');
+Route::get('resell/trades', [ResellController::class, 'trades'])->name('resell.trades');
+Route::delete('resell/{listing}', [ResellController::class, 'cancel'])->name('resell.cancel');
+
+Route::get('marketplace', [MarketplaceController::class, 'index'])->name('marketplace.index');
+Route::post('marketplace/{listing}/buy', [MarketplaceController::class, 'buy'])->middleware('throttle:30,1')->name('marketplace.buy');
 
 Route::get('/wallet/convert', [WalletConvertController::class, 'create'])->name('wallet.convert');
 Route::post('/wallet/convert', [WalletConvertController::class, 'store'])

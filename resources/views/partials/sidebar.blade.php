@@ -36,10 +36,11 @@
             'user.wallet.*', 'user.deposit', 'user.deposit.*', 'user.deposit-history.*',
             'user.withdrawal-history.*', 'user.transaction-history.*'
         );
-        $sharesActive = request()->routeIs(
-            'user.available-projects.*', 'user.project-details.*', 'user.my-shares.*',
-            'user.purchase-history.*', 'user.sales-history.*', 'user.share-transfer.*'
-        );
+$sharesActive = request()->routeIs(
+    'user.available-projects.*', 'user.project-details.*', 'user.my-shares.*',
+    'user.purchase-history.*', 'user.sales-history.*', 'user.share-transfer.*',
+    'user.marketplace.*', 'user.resell.*'
+);
        
         $recordsActive = request()->routeIs(
             'user.investment-summary.*', 'user.project-wise-records.*',
@@ -49,7 +50,6 @@
             'user.rewards.*', 'user.reward-categories.*',
             'user.reward-history.*', 'user.achievement-rewards.*'
         );
-        $agentsActive = request()->routeIs('user.agents.*', 'user.research.*');
         $leaderboardActive = request()->routeIs('user.leaderboard.*');
         $referralActive = request()->routeIs('user.referrals.*');
         $positionActive = request()->routeIs('user.my-position.*');
@@ -102,7 +102,6 @@
                 <div class="submenu">
                     <a href="{{ route('user.wallet.index') }}" class="{{ request()->routeIs('user.wallet.index') ? 'active' : '' }}">Wallet Overview</a>
                     <a href="{{ route('user.deposit') }}" class="{{ request()->routeIs('user.deposit', 'user.deposit.*') ? 'active' : '' }}">Deposit Money</a>
-                    <a href="{{ route('user.wallet.convert') }}" class="{{ request()->routeIs('user.wallet.convert*') ? 'active' : '' }}">Convert Currency</a>
                     <a href="{{ route('user.deposit-history.index') }}" class="{{ request()->routeIs('user.deposit-history.*') ? 'active' : '' }}">Deposit History</a>
                     <a href="{{ route('user.withdrawal-history.index') }}" class="{{ request()->routeIs('user.withdrawal-history.*') ? 'active' : '' }}">Withdrawal History</a>
                     <a href="{{ route('user.transaction-history.index') }}" class="{{ request()->routeIs('user.transaction-history.*') ? 'active' : '' }}">Transaction History</a>
@@ -125,7 +124,9 @@
                     <a href="{{ route('user.my-shares.index') }}" class="{{ request()->routeIs('user.my-shares.*') ? 'active' : '' }}">My Shares</a>
                     <a href="{{ route('user.purchase-history.index') }}" class="{{ request()->routeIs('user.purchase-history.*') ? 'active' : '' }}">Purchase History</a>
                     <a href="{{ route('user.sales-history.index') }}" class="{{ request()->routeIs('user.sales-history.*') ? 'active' : '' }}">Sales History</a>
-                    <a href="{{ route('user.share-transfer.index') }}" class="{{ request()->routeIs('user.share-transfer.*') ? 'active' : '' }}">Share Transfer / Resale</a>
+                   
+                    <a href="{{ route('user.marketplace.index') }}" class="{{ request()->routeIs('user.marketplace.*') ? 'active' : '' }}">Marketplace</a>
+<a href="{{ route('user.resell.index') }}" class="{{ request()->routeIs('user.resell.*') ? 'active' : '' }}">Resell Share</a>
                 </div>
             </details>
 
@@ -218,17 +219,13 @@
                     <a href="{{ route('user.withdrawal-methods') }}" class="{{ request()->routeIs('user.withdrawal-methods') ? 'active' : '' }}">Withdrawal Methods</a>
                 </div>
             </details>
-            <details class="menu-group {{ $agentsActive ? 'active' : '' }}" {{ $agentsActive ? 'open' : '' }}>
-            <summary>
+
+            {{-- Local Agent: এখন শুধু এজেন্ট খোঁজা (Research লুকানো) --}}
+            <a href="{{ route('user.agents.index') }}"
+                class="sidebar-link {{ request()->routeIs('user.agents.*') ? 'active' : '' }}">
                 <span class="menu-icon">⌖</span>
                 <span>Local Agent</span>
-                <span class="menu-arrow">›</span>
-            </summary>
-            <div class="submenu">
-                <a href="{{ route('user.agents.index') }}" class="{{ request()->routeIs('user.agents.*') ? 'active' : '' }}">Find an Agent</a>
-                <a href="{{ route('user.research.index') }}" class="{{ request()->routeIs('user.research.*') ? 'active' : '' }}">My Research Requests</a>
-            </div>
-        </details>
+            </a>
         </div>
 
         <div class="menu-section">
@@ -273,17 +270,15 @@
         </div>
 
     </nav>
+
 {{-- AGENT SIDEBAR --}}
 @elseif(auth()->user()->role === 'agent')
 
 @php
     $agentRec = auth()->user()->agent;
-    $agentUnread = $agentRec
-        ? \App\Models\AgentMessage::where('agent_id', $agentRec->id)
-            ->where('sender_id', '!=', auth()->id())->whereNull('read_at')->count()
-        : 0;
-    $agStatus = request('status');
-    $agReq = request()->routeIs('agent.requests.*');
+    $agentCur = $agentRec?->currency() ?? 'BDT';
+    $agentBal = $agentRec?->recharge_balance ?? 0;
+    $agentUsd = \App\Support\AgentMoney::usd($agentBal, $agentCur);   // USD Converted View
     $agDeposit = request()->routeIs('agent.deposits.*');
     $agRecharge = request()->routeIs('agent.recharge.*');
 @endphp
@@ -295,7 +290,10 @@
         {{-- Recharge Balance (ইউজারের Investment Wallet থেকে আলাদা) --}}
         <a href="{{ route('agent.transactions.index') }}" class="agent-balance" title="View transactions">
             <small>Recharge Balance</small>
-            <strong>${{ number_format((float) ($agentRec?->recharge_balance ?? 0), 2) }}</strong>
+            <strong>{{ \App\Support\AgentMoney::format($agentBal, $agentCur) }}</strong>
+            @if($agentUsd)
+                <small class="agent-balance-usd">{{ $agentUsd }} · Converted View</small>
+            @endif
         </a>
 
         <a href="{{ route('agent.dashboard') }}" class="sidebar-link {{ request()->routeIs('agent.dashboard') ? 'active' : '' }}">
@@ -314,7 +312,7 @@
                 <span class="menu-icon">▣</span><span>Deposit</span><span class="menu-arrow">›</span>
             </summary>
             <div class="submenu">
-                <a href="{{ route('agent.deposits.create') }}" class="{{ request()->routeIs('agent.deposits.create') ? 'active' : '' }}">Deposit Money</a>
+                <a href="{{ route('agent.deposits.create') }}" class="{{ request()->routeIs('agent.deposits.create') ? 'active' : '' }}">Buy Balance</a>
                 <a href="{{ route('agent.deposits.index') }}" class="{{ request()->routeIs('agent.deposits.index') ? 'active' : '' }}">Deposit History</a>
             </div>
         </details>
@@ -332,29 +330,6 @@
 
         <a href="{{ route('agent.transactions.index') }}" class="sidebar-link {{ request()->routeIs('agent.transactions.*') ? 'active' : '' }}">
             <span class="menu-icon">☰</span><span>Transactions</span>
-        </a>
-    </div>
-
-    <div class="menu-section">
-        <div class="menu-section-title">RESEARCH</div>
-
-        <details class="menu-group {{ $agReq ? 'active' : '' }}" {{ $agReq ? 'open' : '' }}>
-            <summary>
-                <span class="menu-icon">▤</span><span>Research Requests</span><span class="menu-arrow">›</span>
-            </summary>
-            <div class="submenu">
-                <a href="{{ route('agent.requests.index') }}" class="{{ $agReq && ! $agStatus ? 'active' : '' }}">All Requests</a>
-                <a href="{{ route('agent.requests.index', ['status' => 'pending']) }}" class="{{ $agReq && $agStatus === 'pending' ? 'active' : '' }}">Pending Requests</a>
-                <a href="{{ route('agent.requests.index', ['status' => 'completed']) }}" class="{{ $agReq && $agStatus === 'completed' ? 'active' : '' }}">Completed Research</a>
-                <a href="{{ route('agent.requests.index', ['status' => 'history']) }}" class="{{ $agReq && $agStatus === 'history' ? 'active' : '' }}">Research History</a>
-            </div>
-        </details>
-
-        <a href="{{ route('agent.messages.index') }}" class="sidebar-link {{ request()->routeIs('agent.messages.*') ? 'active' : '' }}">
-            <span class="menu-icon">✉</span><span>Messages</span>
-            @if($agentUnread)
-                <span style="margin-left:auto;background:#087f5b;color:#fff;border-radius:999px;padding:1px 8px;font-size:11px;">{{ $agentUnread }}</span>
-            @endif
         </a>
     </div>
 
@@ -414,11 +389,10 @@
         || request()->routeIs('super-admin.reports.activity-logs')
         || request()->routeIs('super-admin.reports.product-catalogue');
 
+        // Research মেনু লুকানো: শুধু এজেন্ট, ডিপোজিট ও এলাকা
         $saAgents = request()->routeIs(
             'super-admin.agents.*', 'super-admin.agent-locations.*',
-            'super-admin.agent-deposits.*',
-            'super-admin.research-requests.*', 'super-admin.research-reports.*',
-            'super-admin.agent-performance.*'
+            'super-admin.agent-deposits.*'
         );
 
         // pending এজেন্ট ডিপোজিটের সংখ্যা (ব্যাজের জন্য)
@@ -582,9 +556,6 @@
             @endif
         </a>
         <a href="{{ route('super-admin.agent-locations.index') }}" class="{{ request()->routeIs('super-admin.agent-locations.*') ? 'active' : '' }}">Countries & Districts</a>
-        <a href="{{ route('super-admin.research-requests.index') }}" class="{{ request()->routeIs('super-admin.research-requests.*') ? 'active' : '' }}">Research Requests</a>
-        <a href="{{ route('super-admin.research-reports.index') }}" class="{{ request()->routeIs('super-admin.research-reports.*') ? 'active' : '' }}">Research Reports</a>
-        <a href="{{ route('super-admin.agent-performance.index') }}" class="{{ request()->routeIs('super-admin.agent-performance.*') ? 'active' : '' }}">Agent Performance</a>
     </div>
 </details>
 
@@ -905,6 +876,13 @@
         margin-top: 3px;
         font-size: 20px;
         font-weight: 800;
+    }
+
+    /* USD Converted View লাইন */
+    .agent-balance .agent-balance-usd {
+        margin-top: 4px;
+        letter-spacing: 0;
+        opacity: .8;
     }
 
     /* ===== Count badge (e.g. pending agent deposits) ===== */

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Agent;
 use App\Models\ShareHolding;
 use App\Models\User;
 use App\Services\AgentBalanceService;
+use App\Support\AgentMoney;
 use App\Support\Notify;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
@@ -21,29 +22,35 @@ class RechargeController extends BaseAgentController
         $searched = false;
         $found = null;
         $shares = '0';
+        $userCurrency = null;
 
         if ($request->filled('user_id')) {
             $request->validate(['user_id' => ['required', 'integer', 'min:1']]);
 
             $searched = true;
 
-            // শুধু সাধারণ (public) active ইউজার; এজেন্ট নিজে নয়
             $found = User::where('id', $request->integer('user_id'))
                 ->where('role', 'user')
                 ->where('status', 'active')
                 ->where('id', '!=', $agent->user_id)
-                ->first(['id', 'name']);
+                ->first();
 
             if ($found) {
                 $shares = (string) ShareHolding::where('user_id', $found->id)->sum('shares');
+                $userCurrency = strtoupper($found->walletCurrency());
             }
         }
 
+        $currency = $agent->currency();
+
         return view('agent.recharge.form', [
             'agent' => $agent,
+            'currency' => $currency,
             'searched' => $searched,
             'found' => $found,
             'shares' => $shares,
+            'userCurrency' => $userCurrency,
+            'sameCurrency' => $userCurrency === null || $userCurrency === $currency,
             'token' => (string) Str::uuid(),
         ]);
     }
@@ -54,7 +61,7 @@ class RechargeController extends BaseAgentController
 
         $data = $request->validate([
             'user_id' => ['required', 'integer', 'min:1'],
-            'amount' => ['required', 'numeric', 'gt:0', 'max:100000', 'decimal:0,2'],
+            'amount' => ['required', 'numeric', 'gt:0', 'max:100000000', 'decimal:0,2'],
             'token' => ['required', 'uuid'],
         ]);
 
@@ -76,18 +83,17 @@ class RechargeController extends BaseAgentController
             return back()->withInput()->with('error', $e->getMessage());
         }
 
-        // Transaction commit হওয়ার পর notification
+        $shown = AgentMoney::format($recharge->wallet_amount, $recharge->wallet_currency);
+
         Notify::user(
             $user,
             'Wallet Recharged',
-            'Your wallet has been recharged with '
-                . Notify::money($recharge->wallet_amount, $recharge->wallet_currency)
-                . ' by an authorized agent.',
+            "Your wallet has been recharged with {$shown} by an authorized agent.",
             'success'
         );
 
         return redirect()->route('agent.recharge.history')
-            ->with('success', "রিচার্জ সফল: {$user->name} (#{$user->id}) — \${$recharge->amount}");
+            ->with('success', "রিচার্জ সফল: {$user->name} (#{$user->id}) — {$shown}");
     }
 
     public function history(Request $request)

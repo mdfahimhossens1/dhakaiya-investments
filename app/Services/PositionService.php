@@ -147,7 +147,7 @@ class PositionService
                 ->lockForUpdate()
                 ->first();
 
-            $free = $holding ? $holding->shares - $holding->locked_shares : 0;
+$free = $holding ? $holding->shares - $holding->locked_shares - (int) $holding->listed_shares : 0;
 
             if ($free < $count) {
                 throw new ShareException("Lock করার মতো মাত্র {$free}টি শেয়ার আছে।");
