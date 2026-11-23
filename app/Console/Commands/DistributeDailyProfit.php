@@ -9,6 +9,7 @@ use App\Models\ShareOrder;
 use App\Models\UserPosition;
 use App\Services\ShareService;
 use App\Services\WalletService;
+use App\Services\Notify;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Database\UniqueConstraintViolationException;

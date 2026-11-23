@@ -445,8 +445,7 @@ Route::get('/agent-performance', [AgentPerformanceController::class, 'index'])->
 Route::get('agent-deposits', [AgentDepositController::class, 'index'])->name('agent-deposits.index');
 Route::patch('agent-deposits/{agentDeposit}/approve', [AgentDepositController::class, 'approve'])->name('agent-deposits.approve');
 Route::patch('agent-deposits/{agentDeposit}/reject', [AgentDepositController::class, 'reject'])->name('agent-deposits.reject');
-Route::patch('agents/{agent}/discount', [AgentController::class, 'discount'])->name('agents.discount');
-Route::get('/currency-rates', [CurrencyRateController::class, 'index'])->name('currency-rates.index');
+Route::patch('agents/{agent}/discount', [SuperAdminAgentController::class, 'discount'])->name('agents.discount');Route::get('/currency-rates', [CurrencyRateController::class, 'index'])->name('currency-rates.index');
 Route::put('/currency-rates', [CurrencyRateController::class, 'update'])->name('currency-rates.update');
 Route::get('/profit-distribution', [ProfitDistributionController::class, 'index'])->name('profit-distribution.index');
 Route::post('/profit-distribution', [ProfitDistributionController::class, 'run'])->name('profit-distribution.run');

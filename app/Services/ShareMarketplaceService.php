@@ -278,7 +278,7 @@ class ShareMarketplaceService
             }
 
             // বিক্রেতার Wallet-এ যোগ (কমিশন বাদে)
-            // ⚠️ আগের 'share_sell'-এর মতোই এই টাকা তোলা যাবে না, শুধু শেয়ার কেনায় ব্যবহার হবে।
+            // 
             //    তোলার মতো করতে চাইলে নিচের meta-তে 'withdrawable' => true যোগ করুন।
             $this->wallets->credit(
                 $seller,
