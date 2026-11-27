@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.dhakaiyainvestments.app",
+      "sha256_cert_fingerprints": [
+        "BC:C5:D9:03:08:B5:5D:FC:17:EE:B5:09:A2:D2:FD:E0:E4:C2:16:B3:91:71:1B:29:C0:7C:0C:EC:DB:DC:AA:50"
+      ]
+    }
+  }
+]

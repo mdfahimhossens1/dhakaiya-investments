@@ -6,6 +6,13 @@
 <title>Dhakaiya Investments | Welcome</title>
 <meta name="description" content="Welcome to Dhakaiya Investments. Explore our platform, account services and user support.">
 <meta name="theme-color" content="#0b1428">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dhakaiya Investments">
+<link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+<link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
+<link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
@@ -489,6 +496,16 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
   text-align:left;margin:0;
 }
 .app-modal-note span{flex-shrink:0;font-size:13px;margin-top:1px;color:var(--gold-d)}
+
+/* PWA install actions */
+.app-modal-pwa-actions{display:grid;grid-template-columns:1fr;gap:10px;margin:0 0 14px}
+.app-modal-action{width:100%;min-height:46px;display:flex;align-items:center;justify-content:center;gap:9px;padding:12px 16px;border-radius:10px;border:1px solid transparent;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;transition:transform .2s,box-shadow .2s,background .2s}
+.app-modal-action:hover{transform:translateY(-2px)}
+.app-modal-action-primary{background:linear-gradient(135deg,var(--gold-2),var(--gold));color:var(--ink);box-shadow:0 8px 20px rgba(214,173,98,.22)}
+.app-modal-action-secondary{background:#0b1428;color:#fff;border-color:rgba(214,173,98,.25)}
+.app-modal-action:disabled{opacity:.55;cursor:not-allowed;transform:none}
+.app-modal-platform-note{font-size:11px;line-height:1.6;color:#64748b;margin:0 0 14px}
+.app-modal-note{margin-top:0}
 
 /* Responsive */
 @media(max-width:1000px){
@@ -1017,7 +1034,7 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
 
       <div class="app-modal-badge">
         <span class="app-modal-badge-dot"></span>
-        Coming Soon
+        Installable Web App
       </div>
     </div>
 
@@ -1034,6 +1051,16 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
         <div class="app-modal-feature"><span>🔔</span> Instant alerts</div>
         <div class="app-modal-feature"><span>🔐</span> Secure login</div>
       </div>
+
+      <div class="app-modal-pwa-actions">
+        <button type="button" class="app-modal-action app-modal-action-primary" id="pwaInstallButton" onclick="installDhakaiyaPWA()">
+          <span aria-hidden="true">⬇</span> Install App
+        </button>
+        <a class="app-modal-action app-modal-action-secondary" href="{{ asset('downloads/dhaka-investments-release.apk') }}" download>
+          <span aria-hidden="true">📱</span> Download Android APK
+        </a>
+      </div>
+      <p class="app-modal-platform-note" id="pwaInstallHelp">Android Chrome: tap Install App. iPhone/iPad: open Share, then choose “Add to Home Screen”.</p>
 
       <div class="app-modal-stores">
         <a href="#" class="store-btn" onclick="event.preventDefault(); storeComingSoon('Google Play Store');">
@@ -1059,8 +1086,7 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
 
       <p class="app-modal-note">
         <span>✦</span>
-        We're putting the finishing touches on our mobile apps.
-        They'll be available very soon!
+        Install the website as an app for a convenient full-screen experience. The Google Play Store and Apple App Store versions are not published yet.
       </p>
     </div>
 
@@ -1157,7 +1183,65 @@ h1,h2,h3,h4{font-family:'Manrope',sans-serif}
   });
 })();
 
-/* ==== APP DOWNLOAD MODAL LOGIC ==== */
+/* ==== PWA INSTALL + APP DOWNLOAD MODAL LOGIC ==== */
+let dhakaiyaDeferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', function (event) {
+    // Keep Chrome's native install prompt until the visitor taps Install App.
+    event.preventDefault();
+    dhakaiyaDeferredInstallPrompt = event;
+    const installButton = document.getElementById('pwaInstallButton');
+    const installHelp = document.getElementById('pwaInstallHelp');
+    if (installButton) {
+        installButton.disabled = false;
+        installButton.innerHTML = '<span aria-hidden="true">⬇</span> Install App';
+    }
+    if (installHelp) {
+        installHelp.textContent = 'Your browser supports direct installation. Tap Install App to continue.';
+    }
+});
+
+window.addEventListener('appinstalled', function () {
+    dhakaiyaDeferredInstallPrompt = null;
+    const installButton = document.getElementById('pwaInstallButton');
+    const installHelp = document.getElementById('pwaInstallHelp');
+    if (installButton) {
+        installButton.disabled = true;
+        installButton.textContent = 'App Installed';
+    }
+    if (installHelp) {
+        installHelp.textContent = 'Dhakaiya Investments has been installed on this device.';
+    }
+});
+
+async function installDhakaiyaPWA() {
+    const installHelp = document.getElementById('pwaInstallHelp');
+
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+        if (installHelp) installHelp.textContent = 'The app is already installed on this device.';
+        return;
+    }
+
+    if (dhakaiyaDeferredInstallPrompt) {
+        dhakaiyaDeferredInstallPrompt.prompt();
+        const choice = await dhakaiyaDeferredInstallPrompt.userChoice;
+        if (installHelp) {
+            installHelp.textContent = choice && choice.outcome === 'accepted'
+                ? 'Installation started. Follow the instructions on your device.'
+                : 'Installation was cancelled. You can try again later.';
+        }
+        dhakaiyaDeferredInstallPrompt = null;
+        return;
+    }
+
+    const isIOS = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+    if (installHelp) {
+        installHelp.textContent = isIOS
+            ? 'On iPhone/iPad: tap the Share button in Safari, then select “Add to Home Screen”.'
+            : 'If Install App is not available, open this website in Chrome, use the browser menu (⋮), and choose “Install app” or “Add to Home screen”.';
+    }
+}
+
 function openAppModal() {
   document.getElementById('appModalOverlay').classList.add('show');
   document.body.style.overflow = 'hidden';
@@ -1225,6 +1309,21 @@ document.addEventListener('keydown', function (e) {
     }
   }
 });
+</script>
+
+{{-- PWA SERVICE WORKER REGISTRATION --}}
+<script>
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+        navigator.serviceWorker.register("{{ asset('sw.js') }}", { scope: '/' })
+            .then(function (registration) {
+                console.info('Dhakaiya Investments PWA service worker registered:', registration.scope);
+            })
+            .catch(function (error) {
+                console.error('PWA service worker registration failed:', error);
+            });
+    });
+}
 </script>
 
 </body>
